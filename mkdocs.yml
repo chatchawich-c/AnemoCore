@@ -1,0 +1,47 @@
+site_name: AnemoCore Documentation
+site_url: https://chatchawichchaihong.github.io/AnemoCore
+repo_url: https://github.com/chatchawichchaihong/AnemoCore
+repo_name: AnemoCore
+nav:
+  - Home: index.md
+  - Usage: usage.md
+  - Equations: equations.md
+  - Python API: api/python.md
+  - API Manual: API_USAGE_MANUAL.md
+  - ECO-WIND Benchmarks:
+      - Overview: benchmarks/index.md
+      - Results: benchmarks/results.md
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.top
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+markdown_extensions:
+  - pymdownx.arithmatex:
+      generic: true
+  - admonition
+  - codehilite
+  - footnotes
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.tasklist:
+      custom_checkbox: true

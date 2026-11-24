@@ -1,0 +1,31 @@
+[package]
+name = "anemocore"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+readme = "../../README.md"
+keywords.workspace = true
+categories.workspace = true
+description = "Pure-Rust (#![no_std] compatible) mathematical kernels for wind resource assessment, wake aerodynamics, and turbine prognostics."
+
+[features]
+default = ["std"]
+std = [
+    "dep:rayon",
+    "dep:faer",
+    "dep:rustfft",
+]
+# Optional integration with SEMFlow (sharing faer = "0.20")
+sem = ["std"]
+
+[dependencies]
+libm = { workspace = true }
+heapless = { workspace = true }
+microfft = { workspace = true }
+rayon = { workspace = true, optional = true }
+faer = { workspace = true, optional = true }
+rustfft = { workspace = true, optional = true }
+
+[dev-dependencies]

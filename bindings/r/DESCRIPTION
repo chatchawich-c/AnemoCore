@@ -1,0 +1,17 @@
+Package: ecowindr
+Title: Multi-Scale Physics-Informed Wind Turbine Prognostics and Control Engine
+Version: 0.1.0
+Authors@R: person(
+    given = "Chatchawich",
+    family = "Chaihong",
+    email = "6610130021@email.psu.ac.th",
+    role = c("aut", "cre"),
+    comment = c(ORCID = "0009-0000-7379-5738")
+  )
+Description: R bindings powered by extendr to the pure-Rust ecowind-core library
+    for wind turbine drivetrain prognostics, wavelet packet entropy, market
+    microstructure liquidity, and aero-thermal wake modeling across ECO-WIND.
+License: MIT + file LICENSE
+Encoding: UTF-8
+NeedsCompilation: yes
+Comment: Grant No. ERASMUS-EDU-2025-CBHE-101177220 (EU Erasmus+ CBHE ECO-WIND)

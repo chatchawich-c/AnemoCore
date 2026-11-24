@@ -1,0 +1,25 @@
+[package]
+name = "anemocore-py"
+version = "0.1.0"
+edition = "2021"
+authors = ["Chatchawich Chaihong <6610130021@email.psu.ac.th>"]
+license = "MIT OR Apache-2.0"
+description = "Python bindings for the AnemoCore Rust core library via PyO3"
+
+[features]
+# Enable the pyo3 extension-module feature for building Python wheels
+extension-module = ["pyo3/extension-module"]
+default = ["extension-module"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module", "abi3-py39"] }
+numpy = "0.22"
+num-traits = "0.2"
+anemocore = { path = "../../crates/anemocore", features = ["std"] }
+
+[lib]
+name = "anemocore"
+crate-type = ["cdylib"]
+
+[package.metadata]
+# optional metadata for maturin
