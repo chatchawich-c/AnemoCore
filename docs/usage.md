@@ -34,7 +34,8 @@ print(result)
 ## Benchmark Execution
 
 ```bash
-python3 /Users/chatchawichchaihong/Documents/ecowind-benchmarks/scripts/run_all_benchmarks.py \
+cd ../ecowind-benchmarks && \
+python3 scripts/run_all_benchmarks.py \
     --only P01 P05 P07 P18 P31 P33 \
     --out results/bench_release_check.json
 ```
