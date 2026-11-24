@@ -1,0 +1,61 @@
+name: Build Wheels
+
+# Allow the workflow to upload release assets
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-wheels:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-14, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install maturin and build wheel
+        run: |
+          python -m pip install --upgrade pip maturin
+          maturin build --release --strip --manifest-path bindings/python/Cargo.toml
+      - name: Verify wheel size (< 5 MiB)
+        run: |
+          python - <<'PY'
+          import glob, os, sys
+          wheels = glob.glob('target/wheels/*.whl')
+          if not wheels:
+              sys.exit('No wheel files found')
+          for w in wheels:
+              size = os.path.getsize(w)
+              if size >= 5_242_880:
+                  sys.exit(f'ERROR: {w} size {size} >= 5 MiB')
+          print('All wheels < 5 MiB')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: target/wheels/*.whl
+
+  release:
+    needs: build-wheels
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: wheels
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: wheels/**/*.whl
+      - name: Publish to PyPI (disabled until Trusted Publishing enabled)
+        if: false
+        uses: pypa/gh-action-pypi-publish@release/v1
