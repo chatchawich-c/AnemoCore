@@ -1,9 +1,19 @@
 ## Installation
 
 ```bash
-# Install the Python wheel (replace <wheel-file> with the actual path)
-python3 -m pip install <wheel-file>
+# Python installation via PyPI
+pip install anemocore
+
+# Python installation via GitHub repository
+python3 -m pip install "git+https://github.com/chatchawich-c/AnemoCore.git#subdirectory=bindings/python"
+
+# R installation via remotes
+R -q -e 'remotes::install_github("chatchawich-c/AnemoCore", subdir = "bindings/r")'
+
+# R-universe (optional)
+R -q -e 'install.packages("anemocore", repos = c("https://chatchawich-c.r-universe.dev", "https://cloud.r-project.org"))'
 ```
+
 
 ## Quickstart
 
