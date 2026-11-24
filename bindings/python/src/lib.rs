@@ -4,11 +4,11 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use pyo3::wrap_pyfunction;
+use std::f64::consts::PI;
 
 extern crate anemocore as anemocore_crate;
 use anemocore_crate::fib_qmc::qmc_weibull_cubic_expectation;
 use anemocore_crate::kam_vsg;
-use anemocore_crate::transforms;
 use anemocore_crate::weibull_est::fit_all_six;
 
 /// Fit a Weibull distribution to a vector of data.
@@ -82,14 +82,25 @@ fn py_fft2d(
     nx: usize,
     ny: usize,
 ) -> PyResult<(Vec<f64>, usize, usize)> {
+    if grid.len() < nx * ny {
+        return Err(PyErr::new::<PyValueError, _>(
+            "Grid length must be at least nx * ny".to_string(),
+        ));
+    }
     _py.allow_threads(|| {
         let mut out = vec![0.0_f64; nx * ny];
         for r in 0..ny {
             let start = r * nx;
             let row = &grid[start..start + nx];
-            let (c, _len, _nx) = transforms::micro_fft64(row);
-            for i in 0..nx {
-                out[start + i] = if i == 0 { c.re } else { c.im };
+            for k in 0..nx {
+                let mut re = 0.0_f64;
+                let mut im = 0.0_f64;
+                for (n, &val) in row.iter().enumerate() {
+                    let angle = -2.0 * PI * (k as f64) * (n as f64) / (nx.max(1) as f64);
+                    re += val * angle.cos();
+                    im += val * angle.sin();
+                }
+                out[start + k] = if k == 0 { re } else { im };
             }
         }
         Ok((out, nx, ny))
@@ -190,7 +201,7 @@ fn py_kam_vsg_step(
     let result = _py.allow_threads(|| {
         kam_vsg::step_kam_vsg(&spec, &mut state, ctrl_mode, rocof, delta_f, t_aero_disturb_nm, dt)
     });
-    let dict = PyDict::new(_py);
+    let dict = PyDict::new_bound(_py);
     dict.set_item("k_eff", result.k_eff)?;
     dict.set_item("omega_n", result.omega_n)?;
     dict.set_item("omega_ctrl", result.omega_ctrl)?;
@@ -203,7 +214,7 @@ fn py_kam_vsg_step(
 }
 
 #[pymodule]
-fn anemocore(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn anemocore(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fit_weibull, m)?)?;
     m.add_function(wrap_pyfunction!(qmc_weibull_cubic, m)?)?;
     m.add_function(wrap_pyfunction!(py_fft2d, m)?)?;
