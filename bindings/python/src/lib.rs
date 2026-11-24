@@ -36,7 +36,6 @@ use anemocore_crate::weibull_est::fit_all_six;
     let mean_cube = data.iter().map(|x| x.powi(3)).sum::<f64>() / n;
     let fits = fit_all_six::<256>(mean, std_dev, mean_cube, Some(&data), None);
     Ok((fits.emj.k, fits.emj.c))
-}
 
 /// Compute QMC estimate of Weibull cubic expectation.
 ///
