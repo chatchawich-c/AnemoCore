@@ -22,12 +22,17 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install dependencies
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install dependencies and build AnemoCore bindings
         run: |
           python -m venv .venv
           .venv/bin/pip install --upgrade pip
-          .venv/bin/pip install mkdocs mkdocs-material pymdown-extensions "mkdocstrings[python]"
+          .venv/bin/pip install maturin mkdocs mkdocs-material pymdown-extensions "mkdocstrings[python]"
+          .venv/bin/maturin develop --release -m bindings/python/Cargo.toml
       - name: Build site
+        env:
+          NO_MKDOCS_2_WARNING: "1"
         run: .venv/bin/mkdocs build --strict
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
