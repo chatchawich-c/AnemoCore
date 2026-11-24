@@ -23,10 +23,14 @@ classifiers = [
 dependencies = ["numpy>=1.26"]
 
 [project.urls]
-Homepage = "https://github.com/chatchawich/ecowind-suite"
-Repository = "https://github.com/chatchawich/ecowind-suite"
+Homepage = "https://github.com/chatchawich-c/AnemoCore"
+Repository = "https://github.com/chatchawich-c/AnemoCore"
 
 [tool.maturin]
 features = ["extension-module"]
 module-name = "anemocore"
 manifest-path = "Cargo.toml"
+strip = true
+
+
+
