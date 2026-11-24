@@ -1,6 +1,6 @@
 site_name: AnemoCore Documentation
 site_url: https://chatchawichchaihong.github.io/AnemoCore
-repo_url: https://github.com/chatchawichchaihong/AnemoCore
+repo_url: https://github.com/chatchawich-c/AnemoCore
 repo_name: AnemoCore
 nav:
   - Home: index.md
@@ -45,3 +45,6 @@ markdown_extensions:
   - pymdownx.tilde
   - pymdownx.tasklist:
       custom_checkbox: true
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
