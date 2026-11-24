@@ -35,7 +35,7 @@ jobs:
           NO_MKDOCS_2_WARNING: "1"
         run: .venv/bin/mkdocs build --strict
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: site
       - name: Deploy to GitHub Pages
