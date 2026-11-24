@@ -1,5 +1,6 @@
 [package]
-name = "ecowindr"
+name = "anemocore"
+
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,5 +11,7 @@ description = "R extendr bindings for ecowind-core."
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]
-ecowind-core = { path = "../../crates/ecowind-core" }
+ecowind-core = { path = "../../crates/anemocore" }
 extendr-api = "0.7"
+
+
