@@ -25,7 +25,8 @@ jobs:
           command: build
           args: --release --strip --manifest-path bindings/python/Cargo.toml
       - name: Verify wheel size (< 5 MiB)
-        run: python -c "import glob, os, sys; wheels = glob.glob('target/wheels/*.whl'); assert wheels, 'No wheels built'; [sys.exit(f'ERROR: {w} is {os.path.getsize(w)} bytes (>= 5 MiB)') for w in wheels if os.path.getsize(w) >= 5242880]; print('All wheels < 5 MiB:', [(os.path.basename(w), os.path.getsize(w)) for w in wheels])"
+        run: |
+          python -c "import glob, os, sys; wheels = glob.glob('target/wheels/*.whl'); assert wheels, 'No wheels built'; [sys.exit(f'ERROR: {w} is {os.path.getsize(w)} bytes (>= 5 MiB)') for w in wheels if os.path.getsize(w) >= 5242880]; print('All wheels < 5 MiB:', [(os.path.basename(w), os.path.getsize(w)) for w in wheels])"
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.os }}
