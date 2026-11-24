@@ -4,6 +4,9 @@
 [![no_std Compatible](https://img.shields.io/badge/rust-no__std%20%2B%20std-orange.svg)](#architecture)
 [![Target: Cortex-M4](https://img.shields.io/badge/target-thumbv7em--none--eabihf-brightgreen.svg)](#embedded-hil)
 
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue.svg)](https://chatchawich-c.github.io/AnemoCore/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24495520.svg)](https://doi.org/10.5281/zenodo.24495520)
+
 **AnemoCore** (`anemocore`) is a **pure‑Rust** computational engine for wind resource assessment, 3‑D Gaussian‑Curl wake modeling & sectoral AEP, signal processing, and embedded digital twins on micro‑controllers.
 
 It originated during an exchange research stay at **Tallinn University of Technology (TalTech)**, Estonia, funded by the **EU Erasmus+ CBHE Project ECO‑WIND** (*Enhancing Capacity in Condition‑based Maintenance of Wind Energy*, Grant No. `ERASMUS-EDU-2025-CBHE-101177220`).
