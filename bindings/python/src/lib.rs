@@ -1,10 +1,9 @@
 //! Simplified Python bindings for the AnemoCore core library using PyO3.
 
-use pyo3::exceptions::{PyRuntimeError, PyValueError};
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList};
+use pyo3::types::PyDict;
 use pyo3::wrap_pyfunction;
-use std::collections::HashMap;
 
 extern crate anemocore as anemocore_crate;
 use anemocore_crate::fib_qmc::qmc_weibull_cubic_expectation;
@@ -25,6 +24,8 @@ use anemocore_crate::weibull_est::fit_all_six;
 /// from anemocore import fit_weibull
 /// k, c = fit_weibull([1.0, 2.5, 3.0])
 /// ```
+#[pyfunction]
+fn fit_weibull(_py: Python, data: Vec<f64>) -> PyResult<(f64, f64)> {
     if data.is_empty() {
         return Err(PyErr::new::<PyValueError, _>(
             "Data vector is empty".to_string(),
@@ -36,6 +37,7 @@ use anemocore_crate::weibull_est::fit_all_six;
     let mean_cube = data.iter().map(|x| x.powi(3)).sum::<f64>() / n;
     let fits = fit_all_six::<256>(mean, std_dev, mean_cube, Some(&data), None);
     Ok((fits.emj.k, fits.emj.c))
+}
 
 /// Compute QMC estimate of Weibull cubic expectation.
 ///
@@ -54,8 +56,6 @@ use anemocore_crate::weibull_est::fit_all_six;
 /// ```
 #[pyfunction]
 fn qmc_weibull_cubic(_py: Python, k: f64, c: f64, n: usize) -> PyResult<f64> {
-    Ok(qmc_weibull_cubic_expectation(k, c, n))
-}
     Ok(qmc_weibull_cubic_expectation(k, c, n))
 }
 
@@ -82,15 +82,11 @@ fn py_fft2d(
     nx: usize,
     ny: usize,
 ) -> PyResult<(Vec<f64>, usize, usize)> {
-    // Release the GIL while we perform the heavy work.
     _py.allow_threads(|| {
-        // Very naive implementation: apply the existing micro_fft64 on each row.
-        // In a real scenario you would call a proper 2‑D FFT routine.
         let mut out = vec![0.0_f64; nx * ny];
         for r in 0..ny {
             let start = r * nx;
             let row = &grid[start..start + nx];
-            // micro_fft64 returns a complex number; we store real then imag.
             let (c, _len, _nx) = transforms::micro_fft64(row);
             for i in 0..nx {
                 out[start + i] = if i == 0 { c.re } else { c.im };
@@ -117,8 +113,6 @@ fn py_fft2d(
 fn py_load_wtg(_py: Python, data: Vec<u8>) -> PyResult<bool> {
     _py.allow_threads(|| Ok(!data.is_empty()))
 }
-    _py.allow_threads(|| Ok(!data.is_empty()))
-}
 
 /// Load a windIO YAML configuration (placeholder).
 ///
@@ -140,8 +134,6 @@ fn py_load_wtg(_py: Python, data: Vec<u8>) -> PyResult<bool> {
 fn py_load_windio(_py: Python, yaml: &str) -> PyResult<bool> {
     _py.allow_threads(|| Ok(!yaml.trim().is_empty()))
 }
-    _py.allow_threads(|| Ok(!yaml.trim().is_empty()))
-}
 
 /// KAM VSG step wrapper.
 #[pyfunction]
@@ -155,9 +147,7 @@ fn py_kam_vsg_step(
     t_aero_disturb_nm: f64,
     dt: f64,
 ) -> PyResult<PyObject> {
-    // Build a default spec – actual implementation would read values from spec_dict.
     let mut spec = kam_vsg::KamVsgSpec::p42_default();
-    // Populate spec fields from the dict.
     for (k, v) in spec_dict.iter() {
         let key: String = k.extract()?;
         let val: f64 = v.extract()?;
@@ -178,7 +168,6 @@ fn py_kam_vsg_step(
             _ => {}
         }
     }
-    // Build a default state.
     let mut state = kam_vsg::KamVsgState::zero();
     for (k, v) in state_dict.iter() {
         let key: String = k.extract()?;
@@ -189,7 +178,6 @@ fn py_kam_vsg_step(
             _ => {}
         }
     }
-    // Choose control mode.
     let ctrl_mode = match mode {
         "grid_following" => kam_vsg::ControlMode::GridFollowing,
         "standard_vsg" => kam_vsg::ControlMode::StandardVsg,
@@ -199,11 +187,9 @@ fn py_kam_vsg_step(
             return Err(PyErr::new::<PyValueError, _>(format!("unknown mode `{}`", mode)))
         }
     };
-    // Run the step while releasing the GIL.
     let result = _py.allow_threads(|| {
         kam_vsg::step_kam_vsg(&spec, &mut state, ctrl_mode, rocof, delta_f, t_aero_disturb_nm, dt)
     });
-    // Convert the output struct into a Python dict.
     let dict = PyDict::new(_py);
     dict.set_item("k_eff", result.k_eff)?;
     dict.set_item("omega_n", result.omega_n)?;
@@ -216,14 +202,10 @@ fn py_kam_vsg_step(
     Ok(dict.into())
 }
 
-// Duplicate implementation removed – the correct version above is used.
-}
-
 #[pymodule]
 fn anemocore(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fit_weibull, m)?)?;
     m.add_function(wrap_pyfunction!(qmc_weibull_cubic, m)?)?;
-    // New bindings
     m.add_function(wrap_pyfunction!(py_fft2d, m)?)?;
     m.add_function(wrap_pyfunction!(py_load_wtg, m)?)?;
     m.add_function(wrap_pyfunction!(py_load_windio, m)?)?;
