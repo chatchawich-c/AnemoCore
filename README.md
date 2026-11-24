@@ -64,8 +64,10 @@ python benchmarks/bench_fib_qmc_mbp2017.py --fib-order 28 --runs 10
 
 ---
 
-## 4. Authors & Grant Attribution
+## 4. Authors, Documentation & Grant Attribution
 
+* **Documentation Site:** [https://chatchawich-c.github.io/AnemoCore/](https://chatchawich-c.github.io/AnemoCore/)
+* **Zenodo Archive DOI:** [`10.5281/zenodo.24495520`](https://doi.org/10.5281/zenodo.24495520) (see [`CITATION.cff`](CITATION.cff))
 * **Lead Author:** Chatchawich Chaihong (`ORCID: 0009-0000-7379-5738`, `6610130021@email.psu.ac.th`), Energy Technology Program, Department of Interdisciplinary Engineering, Faculty of Engineering, Prince of Songkla University (PSU), Hat Yai Campus, Songkhla 90110, Thailand.
 * **Funding:** Initiated during an academic exchange at Tallinn University of Technology (TalTech), Estonia, under the **EU Erasmus+ CBHE Project ECO‑WIND** (*Enhancing Capacity in Condition‑based Maintenance of Wind Energy*, Grant No. `ERASMUS-EDU-2025-CBHE-101177220`).
 * **License:** Dual‑licensed under [MIT](LICENSE-MIT) OR [Apache‑2.0](LICENSE-APACHE).
