@@ -245,6 +245,9 @@ fn r_compute_aep_full(
 }
 
 extendr_module! {
+        fn r_zddp_depletion;
+        fn r_arrhenius_oil_life;
+        fn r_heat_diffuse;
     mod anemocore;
 
     fn r_wpt_db4_indicators;
@@ -664,4 +667,50 @@ fn r_var_cvar_project_npv(samples: Vec<f64>, confidence: f64) -> List {
     lst.set("var", var);
     lst.set("cvar", cvar);
     lst
+}
+
+#[extendr]
+fn r_heat_diffuse(values: Vec<f64>, adjacency: List, dt: f64, steps: i32) -> Vec<f64> {
+    let adj: Vec<Vec<usize>> = adjacency
+        .iter()
+        .map(|(_, elem)| {
+            elem.as_integer_vector()
+                .map(|v| v.iter().filter_map(|&x| usize::try_from(x).ok()).collect())
+                .unwrap_or_default()
+        })
+        .collect();
+    let n_steps = usize::try_from(steps).unwrap_or(0);
+    anemocore::heat_diffusion::heat_diffuse(&values, &adj, dt, n_steps)
+}
+
+#[extendr]
+fn r_arrhenius_oil_life(
+    temp_c: f64,
+    ref_temp_c: f64,
+    ref_life_h: f64,
+    activation_energy_j_mol: f64,
+) -> f64 {
+    anemocore::lubricant::lubricant::arrhenius_oil_life(
+        temp_c,
+        ref_temp_c,
+        ref_life_h,
+        activation_energy_j_mol,
+    )
+}
+
+#[extendr]
+fn r_zddp_depletion(
+    initial_ppm: f64,
+    temp_c: f64,
+    time_h: f64,
+    k_ref: f64,
+    activation_energy_j_mol: f64,
+) -> f64 {
+    anemocore::lubricant::lubricant::zddp_depletion(
+        initial_ppm,
+        temp_c,
+        time_h,
+        k_ref,
+        activation_energy_j_mol,
+    )
 }

@@ -541,6 +541,9 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_stealth_fdia_wind_check, m)?)?;
     m.add_function(wrap_pyfunction!(py_weyl_convergent_lags, m)?)?;
     m.add_function(wrap_pyfunction!(py_rank1_lattice_qmc, m)?)?;
+    m.add_function(wrap_pyfunction!(py_heat_diffuse, m)?)?;
+    m.add_function(wrap_pyfunction!(py_arrhenius_oil_life, m)?)?;
+    m.add_function(wrap_pyfunction!(py_zddp_depletion, m)?)?;
     Ok(())
 }
 
@@ -1490,4 +1493,46 @@ pub fn py_jacobi_horizon_guard3(
         out.omega2_kam,
         out.kappa_q,
     ))
+}
+
+#[pyfunction]
+fn py_heat_diffuse(
+    values: Vec<f64>,
+    adjacency: Vec<Vec<usize>>,
+    dt: f64,
+    steps: usize,
+) -> Vec<f64> {
+    anemocore_crate::heat_diffusion::heat_diffuse(&values, &adjacency, dt, steps)
+}
+
+#[pyfunction]
+fn py_arrhenius_oil_life(
+    temp_c: f64,
+    ref_temp_c: f64,
+    ref_life_h: f64,
+    activation_energy_j_mol: f64,
+) -> f64 {
+    anemocore_crate::lubricant::lubricant::arrhenius_oil_life(
+        temp_c,
+        ref_temp_c,
+        ref_life_h,
+        activation_energy_j_mol,
+    )
+}
+
+#[pyfunction]
+fn py_zddp_depletion(
+    initial_ppm: f64,
+    temp_c: f64,
+    time_h: f64,
+    k_ref: f64,
+    activation_energy_j_mol: f64,
+) -> f64 {
+    anemocore_crate::lubricant::lubricant::zddp_depletion(
+        initial_ppm,
+        temp_c,
+        time_h,
+        k_ref,
+        activation_energy_j_mol,
+    )
 }

@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use AnemoCore in your research or benchmarks, please cite it using the metadata from this file."
 title: "AnemoCore"
-version: "0.3.1"
+version: "0.3.2"
 date-released: "2026-11-25"
 license: MIT
 doi: 10.5281/zenodo.24495520

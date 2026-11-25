@@ -1,6 +1,6 @@
 [package]
 name = "anemocore-py"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 authors = ["Chatchawich Chaihong <6610130021@email.psu.ac.th>"]
 license = "MIT OR Apache-2.0"

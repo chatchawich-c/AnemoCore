@@ -325,3 +325,21 @@ Coordinate transformation utilities.
   $$\mathbf{x}' = s\,\mathbf{x}$$
 
 All symbols are defined inline. The document satisfies the MkDocs MathJax requirements and adheres to neutral technical prose.
+
+## 23. `heat_diffusion`
+
+Explicit Euler integration of graph Laplacian heat diffusion over an undirected adjacency list:
+
+$$\mathbf{v}_{t+1} = \mathbf{v}_t - \Delta t \, \mathbf{L} \mathbf{v}_t, \qquad \mathbf{L} = \mathbf{D} - \mathbf{A}$$
+
+where $\mathbf{v}_t$ is the nodal scalar field, $\mathbf{A}$ is the adjacency structure, $\mathbf{D}$ is the degree diagonal, and $\Delta t > 0$ is the integration step.
+
+## 24. `lubricant`
+
+Arrhenius lubricant oxidation service-life model and first-order ZDDP additive depletion model:
+
+$$L(T) = L_0 \exp\!\left[ \frac{E_a}{R} \left( \frac{1}{T} - \frac{1}{T_0} \right) \right]$$
+
+$$C(t) = C_0 \exp\!\big(-k(T)\,t\big), \qquad k(T) = k_{\text{ref}} \exp\!\left[ -\frac{E_a}{R} \left( \frac{1}{T} - \frac{1}{T_{\text{ref}}} \right) \right]$$
+
+with temperatures converted to Kelvin ($T_{\text{ref}} = 298.15\text{ K}$ for ZDDP) and universal gas constant $R = 8.31446261815324\text{ J}\cdot\text{mol}^{-1}\cdot\text{K}^{-1}$.
