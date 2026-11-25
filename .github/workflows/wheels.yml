@@ -22,6 +22,8 @@ jobs:
           - os: windows-latest
             experimental: false
           - os: macos-latest
+            experimental: false
+          - os: macos-15-intel
             experimental: true
     steps:
       - uses: actions/checkout@v4
@@ -48,8 +50,24 @@ jobs:
           name: wheels-${{ matrix.os }}
           path: target/wheels/*.whl
 
+  build-sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --manifest-path bindings/python/Cargo.toml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: target/wheels/*.tar.gz
+
   publish:
-    needs: build-wheels
+    needs: [build-wheels, build-sdist]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
@@ -57,11 +75,11 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      - name: Attach wheels to GitHub Release
+      - name: Attach artifacts to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.whl
+          files: dist/*
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
