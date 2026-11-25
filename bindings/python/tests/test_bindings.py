@@ -3,7 +3,7 @@
 import math
 import unittest
 
-import ecowind_core as ew
+import anemocore as ew
 import numpy as np
 
 

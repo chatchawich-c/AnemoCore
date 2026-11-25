@@ -4,224 +4,260 @@
 # @useDynLib ecowindr, .registration = TRUE
 NULL
 
-#' Computes 3-level Daubechies-4 WPT indicators `(p_low_mid, p_high, kappa_high, h3_renyi)`
-#' matching Paper 33 (`W-SEM` / `W-MGSEM`).
-#' @export
+# Computes 3-level Daubechies-4 WPT indicators `(p_low_mid, p_high, kappa_high, h3_renyi)`
+# matching Paper 33 (`W-SEM` / `W-MGSEM`).
+# @export
 r_wpt_db4_indicators <- function(signal) {
   .Call(wrap__r_wpt_db4_indicators, signal)
 }
 
-#' Computes Roll's (1984) effective bid-ask spread with Parkinson fallback (`Paper 8/43`).
-#' @export
+# Computes Roll's (1984) effective bid-ask spread with Parkinson fallback (`Paper 8/43`).
+# @export
 r_market_roll_spread <- function(prices, window) {
   .Call(wrap__r_market_roll_spread, prices, as.integer(window))
 }
 
-#' Computes Paper 43 Fibonacci Limit-Order-Book density `rho_LOB(z)`.
-#' @export
+# Computes Paper 43 Fibonacci Limit-Order-Book density `rho_LOB(z)`.
+# @export
 r_lob_density <- function(z) {
   .Call(wrap__r_lob_density, z)
 }
 
-#' Evaluates Paper 46 Golden-Section optimal stopping price `S*(DtF)`.
-#' @export
+# Evaluates Paper 46 Golden-Section optimal stopping price `S*(DtF)`.
+# @export
 r_fib_golden_stopping <- function(dtf) {
   .Call(wrap__r_fib_golden_stopping, dtf)
 }
 
-#' Evaluates Paper 46 6D structural limit state `(R_cap, S_load, g_val, DtF)`.
-#' @export
+# Evaluates Paper 46 6D structural limit state `(R_cap, S_load, g_val, DtF)`.
+# @export
 r_fib_limit_state_6d <- function(u) {
   .Call(wrap__r_fib_limit_state_6d, u)
 }
 
-#' Evaluates one O(1) KAM Golden-Ratio VSG step -> `(p_wt_mw, freq_ratio, t_junction_c)`.
-#' @export
+# Evaluates one O(1) KAM Golden-Ratio VSG step -> `(p_wt_mw, freq_ratio, t_junction_c)`.
+# @export
 r_kam_vsg_step <- function(theta_s, rocof, delta_f, dt) {
   .Call(wrap__r_kam_vsg_step, theta_s, rocof, delta_f, dt)
 }
-#' Extrapolate wind speed to a target height using a selectable shear model.
-#' @export
+
+# Extrapolate wind speed to a target height using a selectable shear model.
+# @export
 r_extrapolate_wind_speed <- function(u_ref, z_ref, z_target, model) {
   .Call(wrap__r_extrapolate_wind_speed, u_ref, z_ref, z_target, model)
 }
 
-#' Extrapolate Weibull parameters using Justus‑Mikhail method.
-#' @export
+# Extrapolate Weibull parameters using Justus‑Mikhail method.
+# @export
 r_extrapolate_weibull_justus_mikhail <- function(a_ref, k_ref, z_ref, z_target) {
   .Call(wrap__r_extrapolate_weibull_justus_mikhail, a_ref, k_ref, z_ref, z_target)
 }
 
-#' IEC‑61400‑12‑1 air‑density corrected wind speed.
-#' @export
+# IEC‑61400‑12‑1 air‑density corrected wind speed.
+# @export
 r_normalize_wind_speed_iec <- function(v, rho) {
   .Call(wrap__r_normalize_wind_speed_iec, v, rho)
 }
 
-#' Compute a full AEP report (simplified linear power curve).
-#' @export
+# Compute a full AEP report (simplified linear power curve).
+# @export
 r_compute_aep_full <- function(wind_speed_mean, n_samples, method, losses, rho) {
   .Call(wrap__r_compute_aep_full, wind_speed_mean, as.integer(n_samples), method, losses, rho)
 }
 
-#' Quasicrystal wavelet packet forward transform.
-#' @export
+# Quasicrystal wavelet packet forward transform.
+# @export
 r_quasicrystal_wpt_forward <- function(signal) {
   .Call(wrap__r_quasicrystal_wpt_forward, signal)
 }
 
-#' Quasicrystal wavelet packet inverse transform.
-#' @export
+# Quasicrystal wavelet packet inverse transform.
+# @export
 r_quasicrystal_wpt_inverse <- function(lo, hi) {
   .Call(wrap__r_quasicrystal_wpt_inverse, lo, hi)
 }
 
-#' Quasicrystal wavelet packet decomposition.
-#' @export
+# Quasicrystal wavelet packet decomposition.
+# @export
 r_quasicrystal_wpt_decompose <- function(signal) {
   .Call(wrap__r_quasicrystal_wpt_decompose, signal)
 }
 
-#' One‑sweep QMC Weibull cubic expectation.
-#' @export
+# One‑sweep QMC Weibull cubic expectation.
+# @export
 r_fib_qmc_one_sweep <- function(k_weib, c_weib, n_points) {
   .Call(wrap__r_fib_qmc_one_sweep, k_weib, c_weib, as.integer(n_points))
 }
 
-#' Vogel‑Phyllotaxis layout generator.
-#' @export
+# Vogel‑Phyllotaxis layout generator.
+# @export
 r_vogel_phyllotaxis_layout <- function(n, r_min, c) {
   .Call(wrap__r_vogel_phyllotaxis_layout, as.integer(n), r_min, c)
 }
 
-#' 2‑D structure factor.
-#' @export
+# 2‑D structure factor.
+# @export
 r_structure_factor_2d <- function(vx, vy, grid) {
   .Call(wrap__r_structure_factor_2d, vx, vy, grid)
 }
 
-#' Golden yaw staggering calculation.
-#' @export
+# Golden yaw staggering calculation.
+# @export
 r_golden_yaw_staggering <- function(vx, vy, rotor_diam, wind_speed, spacing) {
   .Call(wrap__r_golden_yaw_staggering, vx, vy, rotor_diam, wind_speed, spacing)
 }
 
-#' Aerothermal wake step.
-#' @export
+# Aerothermal wake step.
+# @export
 r_step_aerothermal_wake <- function(vx, vy, spec, hub_height, wind_speed, t_amb, yaw, t_oil, dt) {
   .Call(wrap__r_step_aerothermal_wake, vx, vy, spec, hub_height, wind_speed, t_amb, yaw, t_oil, dt)
 }
 
-#' Compute cumulative thermal dose hours.
-#' @export
+# Compute cumulative thermal dose hours.
+# @export
 r_compute_ctd_hours <- function(t_oil_k, spec, dt) {
   .Call(wrap__r_compute_ctd_hours, t_oil_k, spec, dt)
 }
 
-#' Prandtl tip‑hub loss.
-#' @export
+# Prandtl tip‑hub loss.
+# @export
 r_prandtl_tip_hub_loss <- function(r_tip, r_hub, r_rotor, lambda) {
   .Call(wrap__r_prandtl_tip_hub_loss, r_tip, r_hub, r_rotor, lambda)
 }
 
-#' BEM steady rotor.
-#' @export
+# BEM steady rotor.
+# @export
 r_bem_steady_rotor <- function(r, chord, twist_deg, phi_rad, lambda, cl, cd, rho) {
   .Call(wrap__r_bem_steady_rotor, r, chord, twist_deg, phi_rad, lambda, cl, cd, rho)
 }
 
-#' Beddoes‑Leishman stall model.
-#' @export
+# Beddoes‑Leishman stall model.
+# @export
 r_beddoes_leishman_stall <- function(cl_static, alpha_deg, dt, state) {
   .Call(wrap__r_beddoes_leishman_stall, cl_static, alpha_deg, dt, state)
 }
 
-#' Aero torque‑thrust curve.
-#' @export
+# Aero torque‑thrust curve.
+# @export
 r_aero_torque_thrust_curve <- function(wind_speeds, r_rotor, omega, rho, c_p) {
   .Call(wrap__r_aero_torque_thrust_curve, wind_speeds, r_rotor, omega, rho, c_p)
 }
 
-#' Mixed EHL asperity load.
-#' @export
+# Mixed EHL asperity load.
+# @export
 r_mixed_ehl_asperity_load <- function(u, v, w, x, y, z, q) {
   .Call(wrap__r_mixed_ehl_asperity_load, u, v, w, x, y, z, q)
 }
 
-#' Micropitting fatigue index.
-#' @export
+# Micropitting fatigue index.
+# @export
 r_micropitting_fatigue_index <- function(u, v, w, x, y, z, q) {
   .Call(wrap__r_micropitting_fatigue_index, u, v, w, x, y, z, q)
 }
 
-#' Bearing spall progression.
-#' @export
+# Bearing spall progression.
+# @export
 r_bearing_spall_progression <- function(a, b, c, d) {
   .Call(wrap__r_bearing_spall_progression, a, b, c, d)
 }
 
-#' Lubricant degradation viscosity.
-#' @export
+# Lubricant degradation viscosity.
+# @export
 r_lubricant_degradation_viscosity <- function(e, f, g) {
   .Call(wrap__r_lubricant_degradation_viscosity, e, f, g)
 }
 
-#' SARIMAX fit.
-#' @export
+# SARIMAX fit.
+# @export
 r_sarimax_fit <- function(y, exog) {
   .Call(wrap__r_sarimax_fit, y, exog)
 }
 
-#' SARIMAX forecast residuals.
-#' @export
+# SARIMAX forecast residuals.
+# @export
 r_sarimax_forecast_residuals <- function(y, params) {
   .Call(wrap__r_sarimax_forecast_residuals, y, params)
 }
 
-#' Fleet cross‑turbine residual (placeholder).
-#' @export
+# Fleet cross‑turbine residual (placeholder).
+# @export
 r_fleet_cross_turbine_residual <- function(data) {
   .Call(wrap__r_fleet_cross_turbine_residual, data)
 }
 
-#' Multi‑domain health index.
-#' @export
+# Multi‑domain health index.
+# @export
 r_multi_domain_health_index <- function(metrics) {
   .Call(wrap__r_multi_domain_health_index, metrics)
 }
 
-#' SCADA missingness diagnostic (placeholder).
-#' @export
+# SCADA missingness diagnostic (placeholder).
+# @export
 r_scada_missingness_diagnostic <- function(df) {
   .Call(wrap__r_scada_missingness_diagnostic, df)
 }
 
-#' Compute LCOE.
-#' @export
+# Compute LCOE.
+# @export
 r_compute_lcoe <- function(capex, fixed_opex, variable_opex, discount_rate, lifetime_years, annual_energy_mwh) {
   .Call(wrap__r_compute_lcoe, capex, fixed_opex, variable_opex, discount_rate, lifetime_years, annual_energy_mwh)
 }
 
-#' Compute LCOH.
-#' @export
+# Compute LCOH.
+# @export
 r_compute_lcoh <- function(capex, fixed_opex, variable_opex, discount_rate, lifetime_years, annual_energy_mwh, efficiency_h2) {
   .Call(wrap__r_compute_lcoh, capex, fixed_opex, variable_opex, discount_rate, lifetime_years, annual_energy_mwh, efficiency_h2)
 }
 
-#' O&M unscheduled cost model.
-#' @export
+# O&M unscheduled cost model.
+# @export
 r_om_unscheduled_cost_model <- function(failure_rate_per_year, repair_duration_hours, mobilization_cost, downtime_revenue_loss_per_hour) {
   .Call(wrap__r_om_unscheduled_cost_model, failure_rate_per_year, repair_duration_hours, mobilization_cost, downtime_revenue_loss_per_hour)
 }
 
-#' Coupled Monte‑Carlo risk.
-#' @export
+# Coupled Monte‑Carlo risk.
+# @export
 r_coupled_monte_carlo_risk <- function(seed, n_samples, wind_stddev, drivetrain_failure_rate, price_volatility) {
   .Call(wrap__r_coupled_monte_carlo_risk, seed, as.integer(n_samples), wind_stddev, drivetrain_failure_rate, price_volatility)
 }
 
-#' Value‑at‑Risk / Conditional‑VaR project NPV.
-#' @export
+# Value‑at‑Risk / Conditional‑VaR project NPV.
+# @export
 r_var_cvar_project_npv <- function(samples, confidence) {
   .Call(wrap__r_var_cvar_project_npv, samples, confidence)
+}
+
+# Arrhenius CTD P6
+anemocore_arrhenius_ctd_p6 <- function(t_k_series, t_ref_k, ea_j_mol, dt_sec) {
+  .Call(wrap__anemocore_arrhenius_ctd_p6, t_k_series, t_ref_k, ea_j_mol, dt_sec)
+}
+
+# Moist air density CIPM2007
+anemocore_air_density_cipm2007 <- function(pressure_pa, temp_k, relative_humidity) {
+  .Call(wrap__anemocore_air_density_cipm2007, pressure_pa, temp_k, relative_humidity)
+}
+
+# Gearbox thermal loss
+anemocore_gearbox_thermal_loss <- function(p_in_w, mu_m, gear_ratio_u, pressure_angle_rad, contact_ratio, f1, p_eq_n, d_m_m, speed_rad_s, c_churn, rho_oil, nu_cst, pitch_line_velocity_ms, face_width_m, f0) {
+  .Call(wrap__anemocore_gearbox_thermal_loss, p_in_w, mu_m, gear_ratio_u, pressure_angle_rad, contact_ratio, f1, p_eq_n, d_m_m, speed_rad_s, c_churn, rho_oil, nu_cst, pitch_line_velocity_ms, face_width_m, f0)
+}
+
+# EHL two‑stage
+anemocore_ehl_two_stage <- function(stage1_eta0, stage1_u_ent, stage1_rx, stage1_w, stage2_eta0, stage2_u_ent, stage2_rx, stage2_w, e_prime_pa, alpha_piezo_pa_inv, sigma_composite_m) {
+  .Call(wrap__anemocore_ehl_two_stage, stage1_eta0, stage1_u_ent, stage1_rx, stage1_w, stage2_eta0, stage2_u_ent, stage2_rx, stage2_w, e_prime_pa, alpha_piezo_pa_inv, sigma_composite_m)
+}
+
+# ISO 281 L10m
+anemocore_iso281_l10m <- function(c_dyn_n, p_load_n, c_u_n, kappa, e_c, reliability_pct, speed_rpm, is_roller) {
+  .Call(wrap__anemocore_iso281_l10m, c_dyn_n, p_load_n, c_u_n, kappa, e_c, reliability_pct, speed_rpm, is_roller)
+}
+
+# ISO 16281 tilt factor
+anemocore_iso16281_tilt_factor <- function(theta_tilt_rad, roller_length_m, radial_clearance_m, mean_contact_deflection_m) {
+  .Call(wrap__anemocore_iso16281_tilt_factor, theta_tilt_rad, roller_length_m, radial_clearance_m, mean_contact_deflection_m)
+}
+
+# Caputo peridynamics
+anemocore_caputo_peridynamics <- function(stretch_history, dt_sec, alpha, critical_stretch_s0) {
+  .Call(wrap__anemocore_caputo_peridynamics, stretch_history, dt_sec, alpha, critical_stretch_s0)
 }

@@ -246,6 +246,7 @@ fn r_compute_aep_full(
 
 extendr_module! {
     mod anemocore;
+
     fn r_wpt_db4_indicators;
     fn r_market_roll_spread;
     fn r_lob_density;
@@ -257,12 +258,53 @@ extendr_module! {
     fn anemocore_gearbox_thermal_loss;
     fn anemocore_ehl_two_stage;
     fn anemocore_iso281_l10m;
+    fn anemocore_iso16281_tilt_factor;
+    fn anemocore_caputo_peridynamics;
     // New utilities
     fn r_extrapolate_wind_speed;
     fn r_extrapolate_weibull_justus_mikhail;
     fn r_normalize_wind_speed_iec;
     fn r_compute_aep_full;
+    // Quasicrystal & QMC
+    fn r_quasicrystal_wpt_forward;
+    fn r_quasicrystal_wpt_inverse;
+    fn r_quasicrystal_wpt_decompose;
+    fn r_fib_qmc_one_sweep;
+    // Phyllotaxis wake
+    fn r_vogel_phyllotaxis_layout;
+    fn r_structure_factor_2d;
+    fn r_golden_yaw_staggering;
+    fn r_step_aerothermal_wake;
+    fn r_compute_ctd_hours;
+    // Tribology extensions
+    fn r_mixed_ehl_asperity_load;
+    fn r_micropitting_fatigue_index;
+    fn r_bearing_spall_progression;
+    fn r_lubricant_degradation_viscosity;
+    // SCADA fleet
+    fn r_sarimax_fit;
+    fn r_sarimax_forecast_residuals;
+    fn r_fleet_cross_turbine_residual;
+    fn r_multi_domain_health_index;
+    fn r_scada_missingness_diagnostic;
+    // Economic risk
+    fn r_compute_lcoe;
+    fn r_compute_lcoh;
+    fn r_om_unscheduled_cost_model;
+    fn r_coupled_monte_carlo_risk;
+    fn r_var_cvar_project_npv;
 }
+
+
+    
+
+
+
+
+
+
+
+
 
 /// Returns vector: `c(l10_rev_millions, l10m_rev_millions, l10m_hours)`.
 #[extendr]
@@ -322,8 +364,8 @@ fn anemocore_caputo_peridynamics(
 }
 
 
-extendr_module! {
-    mod anemocore;
+
+
     fn r_wpt_db4_indicators;
     fn r_market_roll_spread;
     fn r_lob_density;
@@ -336,6 +378,33 @@ extendr_module! {
     fn anemocore_ehl_two_stage;
     fn anemocore_iso16281_tilt_factor;
     fn anemocore_caputo_peridynamics;
+}
+
+
+    mod anemocore;
+    fn r_quasicrystal_wpt_forward;
+    fn r_quasicrystal_wpt_inverse;
+    fn r_quasicrystal_wpt_decompose;
+    fn r_fib_qmc_one_sweep;
+    fn r_vogel_phyllotaxis_layout;
+    fn r_structure_factor_2d;
+    fn r_golden_yaw_staggering;
+    fn r_step_aerothermal_wake;
+    fn r_compute_ctd_hours;
+    fn r_mixed_ehl_asperity_load;
+    fn r_micropitting_fatigue_index;
+    fn r_bearing_spall_progression;
+    fn r_lubricant_degradation_viscosity;
+    fn r_sarimax_fit;
+    fn r_sarimax_forecast_residuals;
+    fn r_fleet_cross_turbine_residual;
+    fn r_multi_domain_health_index;
+    fn r_scada_missingness_diagnostic;
+    fn r_compute_lcoe;
+    fn r_compute_lcoh;
+    fn r_om_unscheduled_cost_model;
+    fn r_coupled_monte_carlo_risk;
+    fn r_var_cvar_project_npv;
 }
 
 // ---------------------------------------------------------------------------
