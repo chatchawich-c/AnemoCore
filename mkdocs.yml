@@ -8,6 +8,7 @@ nav:
   - Mathematical Formulations: MATHEMATICAL_FORMULATIONS.md
   - Python API: api/python.md
   - API Manual: API_USAGE_MANUAL.md
+  - Roadmap: ROADMAP.md
   - ECO-WIND Benchmarks:
       - Overview: benchmarks/index.md
       - Results: benchmarks/results.md
