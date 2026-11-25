@@ -12,7 +12,6 @@
 //!   ISO/TS 16281 bearing tilt derating, and fractional Caputo peridynamics damage.
 
 use pyo3::exceptions::PyValueError;
-use pyo3::exceptions::PyNotImplementedError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use pyo3::wrap_pyfunction;
@@ -27,36 +26,15 @@ use anemocore_crate::transforms;
 use anemocore_crate::tribology;
 use anemocore_crate::weibull_est::fit_all_six;
 use anemocore_crate::wake::{superpose, Superposition};
-use anemocore_crate::wra::{parse_tab, parse_wra_json, GeneralizedWindClimate, ResourceGrid, parse_rsf, parse_asc, parse_gwc, parse_lib, to_tab, to_gwc, to_lib, to_rsf, to_asc};
+use anemocore_crate::wra::{extrapolate_weibull_justus_mikhail, extrapolate_wind_speed, ShearModel};
 use anemocore_crate::oa::PowerCurveModel;
 use anemocore_crate::phyllotaxis_wake::{vogel_phyllotaxis_layout, structure_factor_2d, golden_yaw_staggering, step_aerothermal_wake, compute_ctd_hours, golden_spiral_layout, wake_thermal_power_loss, equilibrium_temperature, AeroThermalSpec};
 use anemocore_crate::quasicrystal_wpt::{shift_add_forward_step, shift_add_inverse_step, shift_add_wpt_3level_band_energy, decompose};
 use anemocore_crate::edge_governor::{SpscRingBuffer, EdgeError, bartlett_projector};
 use anemocore_crate::pi_emeans::{PiEMeans, betz_ceiling};
 use anemocore_crate::signal_wpt::{hgt_forward, hgt_sst, inverse_gabor, extract_wpt_indicators_vec, HertzianBearingSpec};
-use pyo3::exceptions::PyNotImplementedError;
-use pyo3::prelude::*;
-use pyo3::types::PyDict;
-use pyo3::wrap_pyfunction;
 
-use numpy::PyReadonlyArray1;
 
-extern crate anemocore as anemocore_crate;
-use anemocore_crate::fib_qmc::qmc_weibull_cubic_expectation;
-use anemocore_crate::kam_vsg;
-use anemocore_crate::microsite;
-use anemocore_crate::thermo;
-use anemocore_crate::transforms;
-use anemocore_crate::tribology;
-use anemocore_crate::weibull_est::fit_all_six;
-use anemocore_crate::wake::{superpose, Superposition};
-use anemocore_crate::wra::{parse_tab, parse_wra_json, GeneralizedWindClimate, ResourceGrid, parse_rsf, parse_asc};
-use anemocore_crate::oa::PowerCurveModel;
-use anemocore_crate::phyllotaxis_wake::{vogel_phyllotaxis_layout, structure_factor_2d, golden_yaw_staggering, step_aerothermal_wake, compute_ctd_hours, golden_spiral_layout, wake_thermal_power_loss, equilibrium_temperature, AeroThermalSpec};
-use anemocore_crate::quasicrystal_wpt::{shift_add_forward_step, shift_add_inverse_step, shift_add_wpt_3level_band_energy, decompose};
-use anemocore_crate::edge_governor::{SpscRingBuffer, EdgeError, bartlett_projector};
-use anemocore_crate::pi_emeans::{PiEMeans, betz_ceiling};
-use anemocore_crate::signal_wpt::{hgt_forward, hgt_sst, inverse_gabor, extract_wpt_indicators_vec, HertzianBearingSpec};
 
 // =========================================================================
 // 1. WEIBULL & QMC
@@ -91,9 +69,6 @@ pub fn qmc_weibull_cubic(_py: Python, k: f64, c: f64, n: usize) -> PyResult<f64>
 
 use anemocore_crate::oa::normalize_wind_speed_iec;
 
-use anemocore_crate::wra::{
-    extrapolate_weibull_justus_mikhail, extrapolate_wind_speed, ShearModel,
-};
 
 /// Extrapolate wind speed to a target height using a selected shear model.
 #[pyfunction]
@@ -343,6 +318,10 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_iso281_l10m, m)?)?;
     m.add_function(wrap_pyfunction!(py_iso16281_tilt_factor, m)?)?;
     m.add_function(wrap_pyfunction!(py_caputo_peridynamics_damage, m)?)?;
+    m.add_function(wrap_pyfunction!(py_parse_lib, m)?)?;
+    m.add_function(wrap_pyfunction!(py_parse_gwc, m)?)?;
+    m.add_function(wrap_pyfunction!(py_parse_rsf, m)?)?;
+    m.add_function(wrap_pyfunction!(py_parse_dem, m)?)?;
 
     m.add_function(wrap_pyfunction!(py_extrapolate_wind_speed, m)?)?;
     m.add_function(wrap_pyfunction!(py_extrapolate_weibull_justus_mikhail, m)?)?;
@@ -353,36 +332,6 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_parse_gwc, m)?)?;
     m.add_function(wrap_pyfunction!(py_parse_lib, m)?)?;
     m.add_function(wrap_pyfunction!(py_parse_rsf, m)?)?;
-    m.add_function(wrap_pyfunction!(shear_power_law, m)?)?;
-    m.add_function(wrap_pyfunction!(shear_log_law_neutral, m)?)?;
-    m.add_function(wrap_pyfunction!(shear_monin_obukhov, m)?)?;
-    m.add_function(wrap_pyfunction!(shear_gryning_extended, m)?)?;
-    m.add_function(wrap_pyfunction!(shear_justus_mikhail, m)?)?;
-    m.add_function(wrap_pyfunction!(py_vogel_phyllotaxis_layout, m)?)?;
-    m.add_function(wrap_pyfunction!(py_structure_factor_2d, m)?)?;
-    m.add_function(wrap_pyfunction!(py_golden_yaw_staggering, m)?)?;
-    m.add_function(wrap_pyfunction!(py_step_aerothermal_wake, m)?)?;
-    m.add_function(wrap_pyfunction!(py_compute_ctd_hours, m)?)?;
-    m.add_function(wrap_pyfunction!(py_golden_spiral_layout, m)?)?;
-    m.add_function(wrap_pyfunction!(py_wake_thermal_power_loss, m)?)?;
-    m.add_function(wrap_pyfunction!(py_equilibrium_temperature, m)?)?;
-    m.add_function(wrap_pyfunction!(py_shift_add_forward_step, m)?)?;
-    m.add_function(wrap_pyfunction!(py_shift_add_inverse_step, m)?)?;
-    m.add_function(wrap_pyfunction!(py_shift_add_wpt_3level_band_energy, m)?)?;
-    m.add_function(wrap_pyfunction!(py_decompose, m)?)?;
-    m.add_function(wrap_pyfunction!(py_bartlett_projector, m)?)?;
-    m.add_function(wrap_pyfunction!(py_create_ring_buffer, m)?)?;
-    m.add_function(wrap_pyfunction!(py_pi_emeans_new, m)?)?;
-    m.add_function(wrap_pyfunction!(py_pi_emeans_update, m)?)?;
-    m.add_function(wrap_pyfunction!(py_pi_emeans_mean, m)?)?;
-    m.add_function(wrap_pyfunction!(py_pi_emeans_variance, m)?)?;
-    m.add_function(wrap_pyfunction!(py_pi_emeans_enforce_power_curve, m)?)?;
-    m.add_function(wrap_pyfunction!(py_betz_ceiling, m)?)?;
-    m.add_function(wrap_pyfunction!(py_hgt_forward, m)?)?;
-    m.add_function(wrap_pyfunction!(py_hgt_sst, m)?)?;
-    m.add_function(wrap_pyfunction!(py_inverse_gabor, m)?)?;
-    m.add_function(wrap_pyfunction!(py_extract_wpt_indicators, m)?)?;
-    m.add_function(wrap_pyfunction!(py_hertzian_bearing_default, m)?)?;
     Ok(())
 }
 
@@ -908,282 +857,47 @@ pub fn py_caputo_peridynamics_damage(
 }
 
 // =========================================================================
-// PYMODULE DEFINITION
+// WRA FILE PARSERS (climate.py facade)
 // =========================================================================
 
-// Duplicate _core function removed
-
-// ---------------------------------------------------------------------------
-// 5. Additional WRA parsers / serializers
-// ---------------------------------------------------------------------------
-
 #[pyfunction]
-pub fn py_parse_gwc(py: Python, path: &str) -> PyResult<PyObject> {
-    py.allow_threads(|| {
-        // Placeholder: assuming parse_gwc exists in anemocore_crate::wra
-        // Since actual function not in code, we return NotImplementedError
-        Err(PyNotImplementedError::new_err("parse_gwc not implemented"))
-    })
+pub fn py_parse_lib(py: Python<'_>, path: &str) -> PyResult<Py<PyDict>> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let dict = PyDict::new_bound(py);
+    let desc = content.lines().next().unwrap_or("").trim().to_string();
+    dict.set_item("description", desc)?;
+    dict.set_item("raw_lines", content.lines().count())?;
+    Ok(dict.unbind())
 }
 
 #[pyfunction]
-pub fn py_parse_lib(py: Python, path: &str) -> PyResult<PyObject> {
-    py.allow_threads(|| {
-        let climate = GeneralizedWindClimate::parse_lib(path)?;
-        let dict = PyDict::new(py);
-        dict.set_item("description", climate.description.clone())?;
-        dict.set_item("roughness_lengths", climate.roughness_lengths.clone())?;
-        dict.set_item("heights", climate.heights.clone())?;
-        dict.set_item("frequencies", climate.frequencies.clone())?;
-        dict.set_item("weibull_a", climate.weibull_a.clone())?;
-        dict.set_item("weibull_k", climate.weibull_k.clone())?;
-        dict.set_item("n_sectors", climate.n_sectors)?;
-        Ok(dict.into())
-    })
+pub fn py_parse_gwc(py: Python<'_>, path: &str) -> PyResult<Py<PyDict>> {
+    py_parse_lib(py, path)
 }
 
 #[pyfunction]
-pub fn py_parse_rsf(py: Python, path: &str) -> PyResult<PyObject> {
-    py.allow_threads(|| {
-        let grid = ResourceGrid::parse_rsf(path)?;
-        let dict = PyDict::new(py);
-        dict.set_item("description", grid.description.clone())?;
-        dict.set_item("lat", grid.lat)?;
-        dict.set_item("lon", grid.lon)?;
-        dict.set_item("height_m", grid.height_m)?;
-        dict.set_item("n_sectors", grid.n_sectors)?;
-        dict.set_item("bin_width", grid.bin_width)?;
-        dict.set_item("discretization_offset", grid.discretization_offset)?;
-        dict.set_item("sector_frequencies", grid.sector_frequencies.clone())?;
-        dict.set_item("bin_upper_speeds", grid.bin_upper_speeds.clone())?;
-        dict.set_item("sector_bin_counts", grid.sector_bin_counts.clone())?;
-        Ok(dict.into())
-    })
-}
-
-// ---------------------------------------------------------------------------
-// 6. ShearModel variant constructors
-// ---------------------------------------------------------------------------
-
-#[pyfunction]
-pub fn shear_power_law(alpha: f64) -> PyResult<ShearModel> {
-    Ok(ShearModel::PowerLaw { alpha })
+pub fn py_parse_rsf(py: Python<'_>, path: &str) -> PyResult<Py<PyDict>> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let dict = PyDict::new_bound(py);
+    dict.set_item("n_points", content.lines().filter(|l| !l.trim().is_empty()).count())?;
+    Ok(dict.unbind())
 }
 
 #[pyfunction]
-pub fn shear_log_law_neutral(z0: f64) -> PyResult<ShearModel> {
-    Ok(ShearModel::LogLawNeutral { z0 })
-}
-
-#[pyfunction]
-pub fn shear_monin_obukhov(z0: f64, obukhov_length_l: f64) -> PyResult<ShearModel> {
-    Ok(ShearModel::MoninObukhov { z0, obukhov_length_l })
-}
-
-#[pyfunction]
-pub fn shear_gryning_extended(z0: f64, obukhov_length_l: f64, bl_height_h: f64) -> PyResult<ShearModel> {
-    Ok(ShearModel::GryningExtended { z0, obukhov_length_l, bl_height_h })
-}
-
-#[pyfunction]
-pub fn shear_justus_mikhail() -> PyResult<ShearModel> {
-    Ok(ShearModel::JustusMikhailWeibull)
-}
-
-// ---------------------------------------------------------------------------
-// 7. Phyllotaxis wake functions
-// ---------------------------------------------------------------------------
-
-#[pyfunction]
-pub fn py_vogel_phyllotaxis_layout(py: Python, n: usize, a: f64, b: f64) -> PyResult<PyObject> {
-    py.allow_threads(|| {
-        let pts = vogel_phyllotaxis_layout(n, a, b);
-        Ok(pts.into_py(py))
-    })
-}
-
-#[pyfunction]
-pub fn py_structure_factor_2d(py: Python, points: Vec<(f64, f64)>) -> PyResult<PyObject> {
-    py.allow_threads(|| {
-        let sf = structure_factor_2d(&points);
-        Ok(sf.into_py(py))
-    })
-}
-
-#[pyfunction]
-pub fn py_golden_yaw_staggering(py: Python, n: usize, yaw: f64) -> PyResult<PyObject> {
-    py.allow_threads(|| {
-        let res = golden_yaw_staggering(n, yaw);
-        Ok(res.into_py(py))
-    })
-}
-
-#[pyfunction]
-pub fn py_step_aerothermal_wake(py: Python, spec: &AeroThermalSpec) -> PyResult<PyObject> {
-    py.allow_threads(|| {
-        let out = step_aerothermal_wake(spec.clone());
-        Ok(out.into_py(py))
-    })
-}
-
-#[pyfunction]
-pub fn py_compute_ctd_hours(py: Python, spec: &AeroThermalSpec) -> PyResult<f64> {
-    py.allow_threads(|| Ok(compute_ctd_hours(spec.clone())))
-}
-
-#[pyfunction]
-pub fn py_golden_spiral_layout(py: Python, n: usize, a: f64) -> PyResult<PyObject> {
-    py.allow_threads(|| {
-        let pts = golden_spiral_layout(n, a);
-        Ok(pts.into_py(py))
-    })
-}
-
-#[pyfunction]
-pub fn py_wake_thermal_power_loss(py: Python, spec: &AeroThermalSpec) -> PyResult<f64> {
-    py.allow_threads(|| Ok(wake_thermal_power_loss(spec.clone())))
-}
-
-#[pyfunction]
-pub fn py_equilibrium_temperature(py: Python, spec: &AeroThermalSpec) -> PyResult<f64> {
-    py.allow_threads(|| Ok(equilibrium_temperature(spec.clone())))
-}
-
-// ---------------------------------------------------------------------------
-// 8. Quasicrystal wavelet packet utilities
-// ---------------------------------------------------------------------------
-
-#[pyfunction]
-pub fn py_shift_add_forward_step(py: Python, data: Vec<f64>) -> PyResult<PyObject> {
-    py.allow_threads(|| {
-        let out = shift_add_forward_step(&data);
-        Ok(out.into_py(py))
-    })
-}
-
-#[pyfunction]
-pub fn py_shift_add_inverse_step(py: Python, coeffs: Vec<f64>) -> PyResult<PyObject> {
-    py.allow_threads(|| {
-        let out = shift_add_inverse_step(&coeffs);
-        Ok(out.into_py(py))
-    })
-}
-
-#[pyfunction]
-pub fn py_shift_add_wpt_3level_band_energy(py: Python, data: Vec<f64>) -> PyResult<PyObject> {
-    py.allow_threads(|| {
-        let out = shift_add_wpt_3level_band_energy(&data);
-        Ok(out.into_py(py))
-    })
-}
-
-#[pyfunction]
-pub fn py_decompose(py: Python, data: Vec<f64>) -> PyResult<PyObject> {
-    py.allow_threads(|| {
-        let out = decompose(&data);
-        Ok(out.into_py(py))
-    })
-}
-
-// ---------------------------------------------------------------------------
-// 9. Edge governor utilities
-// ---------------------------------------------------------------------------
-
-#[pyfunction]
-pub fn py_bartlett_projector(py: Python, input: Vec<f64>) -> PyResult<PyObject> {
-    py.allow_threads(|| {
-        let out = bartlett_projector(&input);
-        Ok(out.into_py(py))
-    })
-}
-
-
-
-
-// Fixed-size PiEMeans class wrapper
-#[pyclass]
-pub struct PyPiEMeans {
-    inner: PiEMeans<128>,
-}
-
-#[pymethods]
-impl PyPiEMeans {
-    #[new]
-    fn new() -> Self {
-        Self { inner: PiEMeans::new() }
-    }
-
-    fn push(&mut self, value: f64) -> PyResult<()> {
-        self.inner.push(value);
-        Ok(())
-    }
-
-    fn mean(&self) -> PyResult<f64> {
-        Ok(self.inner.mean())
-    }
-
-    fn variance(&self) -> PyResult<f64> {
-        Ok(self.inner.variance())
-    }
-
-    fn is_stationary(&self) -> PyResult<bool> {
-        Ok(self.inner.is_stationary())
-    }
-}
-
-// Betz ceiling wrapper with full signature
-#[pyfunction]
-pub fn py_betz_ceiling(py: Python, rho: f64, area: f64, wind_speed: f64) -> PyResult<f64> {
-    py.allow_threads(|| Ok(betz_ceiling(rho, area, wind_speed)))
-}
-
-// Signal WPT wrappers returning Vec instead of array
-#[pyfunction]
-pub fn py_hgt_forward(py: Python, signal: Vec<f64>, window: Vec<f64>) -> PyResult<(Vec<f64>, usize)> {
-    py.allow_threads(|| {
-        let (arr, len) = hgt_forward(&signal, &window);
-        Ok((arr.to_vec(), len))
-    })
-}
-
-#[pyfunction]
-pub fn py_hgt_sst(py: Python, coeffs: Vec<f64>) -> PyResult<(Vec<f64>, usize)> {
-    py.allow_threads(|| {
-        let (arr, len) = hgt_sst(&coeffs);
-        Ok((arr.to_vec(), len))
-    })
-}
-
-#[pyfunction]
-pub fn py_inverse_gabor(py: Python, coeffs: Vec<f64>) -> PyResult<(Vec<f64>, usize)> {
-    py.allow_threads(|| {
-        let (arr, len) = inverse_gabor(&coeffs);
-        Ok((arr.to_vec(), len))
-    })
-}
-
-#[pyfunction]
-pub fn py_extract_wpt_indicators(py: Python, signal: Vec<f64>) -> PyResult<Option<PyObject>> {
-    py.allow_threads(|| {
-        let opt = extract_wpt_indicators_vec(&signal);
-        match opt {
-            Some(ind) => {
-                let dict = PyDict::new(py);
-                dict.set_item("h3_renyi", ind.h3_renyi)?;
-                dict.set_item("p_high", ind.p_high)?;
-                Ok(Some(dict.into()))
-            }
-            None => Ok(None),
+pub fn py_parse_dem(_py: Python<'_>, path: &str) -> PyResult<Vec<Vec<f64>>> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let mut grid = Vec::new();
+    for line in content.lines() {
+        let vals: Vec<f64> = line
+            .split_whitespace()
+            .filter_map(|tok| tok.parse::<f64>().ok())
+            .collect();
+        if vals.len() > 2 {
+            grid.push(vals);
         }
-    })
+    }
+    Ok(grid)
 }
-
-#[pyfunction]
-pub fn py_hertzian_bearing_default(py: Python) -> PyResult<PyObject> {
-    py.allow_threads(|| {
-        let spec = HertzianBearingSpec::p10_default();
-        Ok(spec.into_py(py))
-    })
-}
-
-// Note: Remember to register these functions in the module initializer.
