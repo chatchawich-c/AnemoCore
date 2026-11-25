@@ -1,6 +1,6 @@
 Package: anemocore
 Title: Multi-Scale Physics-Informed Wind Turbine Prognostics and Control Engine
-Version: 0.2.0
+Version: 0.3.1
 Authors@R: person(
     given = "Chatchawich",
     family = "Chaihong",
