@@ -529,3 +529,177 @@ mod tests {
         assert!(t_next > t_curr);
     }
 }
+
+// ---------------------------------------------------------------------
+
+#[cfg(test)]
+mod thermal_extra_tests {
+    use super::*;
+
+    #[test]
+    fn test_arrhenius_insulation_life() {
+        // Example: operating 165°C, rated 155°C, rated life 20000h -> expected life 10000h, factor 0.5
+        let (life, factor) = arrhenius_insulation_life(165.0, 155.0, 20000.0);
+        assert!((life - 10000.0).abs() < 1e-6);
+        assert!((factor - 0.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_compute_electro_thermal_proxies_safety() {
+        // wind_speed = 0 should not cause panic; proxies should be zero or handled gracefully
+        let proxies = compute_electro_thermal_proxies(
+            30.0,   // temp_c
+            25.0,   // temp_amb_c
+            5.0,    // wind_speed
+            1.0,    // power_kw
+            2.0,    // rated_power_kw
+            1.0,    // v_min
+            1.0,    // v0
+            0.5,    // alpha_elec
+            1000.0, // q_joule_rated_w
+            10.0,   // h_conv_w_per_k_ms
+        );
+        // Expect all proxies to be finite numbers (no NaN/Inf) and non‑negative
+        assert!(proxies.p1_naive.is_finite());
+        assert!(proxies.p2_piecewise.is_finite());
+        assert!(proxies.p3_smooth.is_finite());
+        assert!(proxies.p4_composite.is_finite());
+        assert!(proxies.p5_continuum.is_finite());
+        assert!(proxies.p1_naive >= 0.0 && proxies.p2_piecewise >= 0.0 && proxies.p3_smooth >= 0.0 && proxies.p4_composite >= 0.0 && proxies.p5_continuum >= 0.0);
+    }
+}
+
+// ---------------------------------------------------------------------
+// v0.3.1 additional thermal utilities (no_std compatible)
+// ---------------------------------------------------------------------
+
+/// Class F (155 °C) insulation life prediction using the 10 °C halving rule.
+/// Returns `(adjusted_life_hours, life_factor)` where `life_factor = 2^{-(T_op - T_r)/10}`.
+///
+/// * `operating_temp_c` – actual operating temperature in °C.
+/// * `rated_temp_c` – rated temperature at which `rated_life_hours` is specified.
+/// * `rated_life_hours` – nominal life at `rated_temp_c` (hours).
+#[inline]
+pub fn arrhenius_insulation_life(operating_temp_c: f64, rated_temp_c: f64, rated_life_hours: f64) -> (f64, f64) {
+    let delta = operating_temp_c - rated_temp_c;
+    // life factor = 2 ^ ( -delta / 10 )
+    let exponent = -delta / 10.0_f64;
+    let life_factor = libm::pow(2.0_f64, exponent);
+    (rated_life_hours * life_factor, life_factor)
+}
+
+/// Collection of electro‑thermal proxy stress terms.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ElectroThermalProxies {
+    pub p1_naive: f64,
+    pub p2_piecewise: f64,
+    pub p3_smooth: f64,
+    pub p4_composite: f64,
+    pub p5_continuum: f64,
+}
+
+/// Naïve proxy `P1` – simple ratio of temperature rise time to wind speed.
+/// Returns `Δt / v` with guarded handling of non‑positive wind speed.
+#[inline]
+pub fn thermal_stress_proxy_p1_naive(delta_t: f64, wind_speed: f64) -> f64 {
+    if wind_speed > 0.0 {
+        delta_t / wind_speed
+    } else if delta_t > 0.0 {
+        f64::INFINITY
+    } else if delta_t < 0.0 {
+        f64::NEG_INFINITY
+    } else {
+        0.0
+    }
+}
+
+/// Piecewise proxy `P2` – clamps wind speed to a minimum value `v_min` (> 0).
+#[inline]
+pub fn thermal_stress_proxy_p2_piecewise(delta_t: f64, wind_speed: f64, v_min: f64) -> f64 {
+    let v_eff = if wind_speed < v_min { v_min } else { wind_speed };
+    delta_t / v_eff
+}
+
+/// Smooth proxy `P3` – regularised ratio using a base velocity `v0`.
+#[inline]
+pub fn thermal_stress_proxy_p3_smooth(delta_t: f64, wind_speed: f64, v0: f64) -> f64 {
+    let denom = wind_speed.max(0.0) + v0.max(1e-9_f64);
+    delta_t / denom
+}
+
+/// Composite electro‑thermal proxy `P4` – blends `P3` with a quadratic power term.
+#[inline]
+pub fn thermal_stress_proxy_p4_composite(
+    delta_t: f64,
+    wind_speed: f64,
+    power_kw: f64,
+    rated_power_kw: f64,
+    v0: f64,
+    alpha_elec: f64,
+) -> f64 {
+    let base = thermal_stress_proxy_p3_smooth(delta_t, wind_speed, v0);
+    let power_ratio = power_kw / rated_power_kw.max(1e-9_f64);
+    base * (1.0_f64 + alpha_elec * libm::pow(power_ratio, 2.0_f64))
+}
+
+/// Continuum energy‑balance proxy `P5` – first‑principles estimate of excess thermal stress.
+/// Returns `(T - T_amb) - ΔT_eq` where `ΔT_eq` is the equilibrium temperature rise based on
+/// convective heat transfer.
+#[inline]
+pub fn thermal_stress_proxy_p5_continuum(
+    temp_c: f64,
+    temp_amb_c: f64,
+    wind_speed: f64,
+    power_kw: f64,
+    rated_power_kw: f64,
+    v0: f64,
+    q_joule_rated_w: f64,
+    h_conv_w_per_k_ms: f64,
+) -> f64 {
+    let power_ratio = power_kw / rated_power_kw.max(1e-9_f64);
+    let denom = h_conv_w_per_k_ms * (wind_speed.max(0.0) + v0.max(1e-9_f64));
+    let delta_t_eq = (q_joule_rated_w * libm::pow(power_ratio, 2.0_f64)) / denom;
+    (temp_c - temp_amb_c) - delta_t_eq
+}
+
+/// Compute all five proxy terms at once and return them as a struct.
+#[inline]
+pub fn compute_electro_thermal_proxies(
+    temp_c: f64,
+    temp_amb_c: f64,
+    wind_speed: f64,
+    power_kw: f64,
+    rated_power_kw: f64,
+    v_min: f64,
+    v0: f64,
+    alpha_elec: f64,
+    q_joule_rated_w: f64,
+    h_conv_w_per_k_ms: f64,
+) -> ElectroThermalProxies {
+    let p1 = thermal_stress_proxy_p1_naive(temp_c - temp_amb_c, wind_speed);
+    let p2 = thermal_stress_proxy_p2_piecewise(temp_c - temp_amb_c, wind_speed, v_min);
+    let p3 = thermal_stress_proxy_p3_smooth(temp_c - temp_amb_c, wind_speed, v0);
+    let p4 = thermal_stress_proxy_p4_composite(
+        temp_c - temp_amb_c,
+        wind_speed,
+        power_kw,
+        rated_power_kw,
+        v0,
+        alpha_elec,
+    );
+    let p5 = thermal_stress_proxy_p5_continuum(
+        temp_c,
+        temp_amb_c,
+        wind_speed,
+        power_kw,
+        rated_power_kw,
+        v0,
+        q_joule_rated_w,
+        h_conv_w_per_k_ms,
+    );
+    ElectroThermalProxies { p1_naive: p1, p2_piecewise: p2, p3_smooth: p3, p4_composite: p4, p5_continuum: p5 }
+}
+
+// ---------------------------------------------------------------------
+// End of v0.3.1 additions
+// ---------------------------------------------------------------------

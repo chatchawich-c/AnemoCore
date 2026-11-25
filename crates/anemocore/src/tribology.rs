@@ -24,7 +24,7 @@
 
 extern crate libm;
 
-// use core::f64::consts::PI;  // removed unused import
+use std::f64::consts::PI;
 
 // =========================================================================
 // 1. 2-STAGE DOWSON-HIGGINSON EHL FILM THICKNESS & WEAR INDICATOR
@@ -616,3 +616,284 @@ mod v03_tests {
         assert!(lubricant_degradation_viscosity(40.0, 500.0) > 0.0);
     }
 }
+
+#[cfg(test)]
+mod extra_tests {
+    use super::*;
+
+    #[test]
+    fn test_bearing_fault_frequencies_za2115() {
+        // Rexnord ZA-2115 parameters
+        let nb = 16usize;
+        let db = 8.4074_f64; // m
+        let dc = 71.501_f64; // m
+        let theta = 0.265_f64; // rad
+        let fr = 33.75_f64; // Hz
+        let freqs = bearing_fault_frequencies(nb, db, dc, theta, fr).unwrap();
+        assert!((freqs.bpfo - 239.36).abs() < 0.05);
+        assert!((freqs.bpfi - 300.64).abs() < 0.05);
+        assert!((freqs.bsf - 141.67).abs() < 0.05);
+        assert!((freqs.ftf - 14.96).abs() < 0.05);
+        assert!(freqs.sanity_sum_error < 1e-12);
+        // Nyquist margin safety
+        let (safe, _, _) = check_nyquist_margin(5000.0, freqs.bpfi, 16384);
+        assert!(safe);
+    }
+
+    #[test]
+    fn test_hilbert_and_narrowband_fft() {
+        // Synthetic amplitude‑modulated carrier at 2500 Hz with modulation (envelope) at 236 Hz
+        let fs = 20480.0_f64;
+        let f_fault = 236.0_f64; // envelope / fault frequency
+        let f_carrier = 2500.0_f64; // high‑frequency carrier
+        let n_fft = 32768usize;
+        let t: Vec<f64> = (0..n_fft).map(|i| i as f64 / fs).collect();
+        let m = 0.5; // modulation depth
+        let signal: Vec<f64> = t.iter().map(|&ti| {
+            // carrier signal
+            let carrier = (2.0 * PI * f_carrier * ti).cos();
+            // amplitude modulation (envelope)
+            let envelope = 1.0 + m * (2.0 * PI * f_fault * ti).cos();
+            carrier * envelope
+        }).collect();
+        // Hilbert envelope spectrum should show a peak at the fault (envelope) frequency
+        let (freqs, amplitudes, _) = hilbert_envelope_spectrum(&signal, fs, n_fft).unwrap();
+        // Find peak frequency ignoring DC and frequencies > 1000 Hz
+        let max_idx = freqs.iter()
+            .zip(amplitudes.iter())
+            .filter(|(f, _)| **f > 1.0 && **f <= 1000.0)
+            .enumerate()
+            .max_by(|a, b| a.1 .1.partial_cmp(b.1 .1).unwrap())
+            .map(|(i, _)| i)
+            .unwrap();
+        let peak_freq = freqs[max_idx];
+        assert!((peak_freq - f_fault).abs() < 5.0);
+        // Narrowband tracking around fault frequency should be larger than tracking at a distant control frequency
+        let tracking_fault = narrowband_fft_tracking(&freqs, &amplitudes, f_fault, 1083.0);
+        let tracking_control = narrowband_fft_tracking(&freqs, &amplitudes, 400.0, 1083.0);
+        assert!(tracking_fault > tracking_control);
+    }
+}
+
+// ---------------------------------------------------------------------
+
+// ---------------------------------------------------------------------
+// v0.3.1 additional tribology utilities (ECO‑WIND D3.3 Vibration CMS)
+// ---------------------------------------------------------------------
+
+/// Bearing fault frequency results.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct BearingFaultFreqs {
+    pub bpfo: f64, // Ball Pass Frequency of Outer race
+    pub bpfi: f64, // Ball Pass Frequency of Inner race
+    pub bsf: f64,  // Ball Spin Frequency
+    pub ftf: f64,  // Fundamental Train Frequency
+    pub sanity_sum_error: f64,
+}
+
+/// Compute bearing fault characteristic frequencies.
+///
+/// * `n_balls` – number of rolling elements.
+/// * `ball_dia` – ball diameter (m).
+/// * `pitch_dia` – pitch diameter of the bearing (m).
+/// * `contact_angle_rad` – contact angle (rad).
+/// * `shaft_freq_hz` – shaft rotation frequency (Hz).
+///
+/// Returns a `Result` with computed frequencies or a static error string.
+pub fn bearing_fault_frequencies(
+    n_balls: usize,
+    ball_dia: f64,
+    pitch_dia: f64,
+    contact_angle_rad: f64,
+    shaft_freq_hz: f64,
+) -> Result<BearingFaultFreqs, &'static str> {
+    if n_balls == 0 || ball_dia <= 0.0 || pitch_dia <= 0.0 || shaft_freq_hz <= 0.0 {
+        return Err("invalid bearing parameters");
+    }
+    // Geometry factor gamma
+    let gamma = (ball_dia / pitch_dia) * contact_angle_rad.cos();
+    let fr = shaft_freq_hz;
+    let nb_f = n_balls as f64;
+    let bpfo = 0.5 * nb_f * fr * (1.0 - gamma);
+    let bpfi = 0.5 * nb_f * fr * (1.0 + gamma);
+    let bsf = (pitch_dia / (2.0 * ball_dia)) * fr * (1.0 - gamma * gamma);
+    let ftf = 0.5 * fr * (1.0 - gamma);
+    let sanity_sum_error = ((bpfo + bpfi) - nb_f * fr).abs();
+    Ok(BearingFaultFreqs { bpfo, bpfi, bsf, ftf, sanity_sum_error })
+}
+
+/// Approximate bearing fault frequencies using only ball count and shaft frequency.
+/// Returns `(bpfo, bpfi)` approximations.
+pub fn bearing_fault_frequencies_approx(n_balls: usize, shaft_freq_hz: f64) -> (f64, f64) {
+    let nb_f = n_balls as f64;
+    (0.4 * nb_f * shaft_freq_hz, 0.6 * nb_f * shaft_freq_hz)
+}
+
+/// Verify Nyquist margin for a given sampling frequency.
+/// Returns `(is_safe, nyquist_hz, freq_resolution_hz)`.
+pub fn check_nyquist_margin(fs_hz: f64, f_max_hz: f64, n_fft: usize) -> (bool, f64, f64) {
+    let nyquist = 0.5 * fs_hz;
+    let safe = fs_hz >= 2.56 * f_max_hz; // 1.28 * 2 * f_max
+    let freq_res = fs_hz / n_fft as f64;
+    (safe, nyquist, freq_res)
+}
+
+/// Simple complex number type for FFT.
+#[derive(Clone, Copy, Debug)]
+struct Complex {
+    re: f64,
+    im: f64,
+}
+
+impl Complex {
+    fn new(re: f64, im: f64) -> Self { Self { re, im } }
+    fn mul(self, other: Self) -> Self {
+        Self {
+            re: self.re * other.re - self.im * other.im,
+            im: self.re * other.im + self.im * other.re,
+        }
+    }
+    fn scale(self, s: f64) -> Self { Self { re: self.re * s, im: self.im * s } }
+    fn conj(self) -> Self { Self { re: self.re, im: -self.im } }
+    fn magnitude(self) -> f64 { libm::hypot(self.re, self.im) }
+}
+
+/// In‑place Radix‑2 Cooley‑Tukey FFT (forward).
+fn fft_radix2(signal: &mut [Complex]) {
+    let n = signal.len();
+    let bits = (n as f64).log2() as usize;
+    // Bit‑reversal permutation
+    for i in 0..n {
+        let rev = i.reverse_bits() >> (usize::BITS as usize - bits);
+        if i < rev {
+            signal.swap(i, rev);
+        }
+    }
+    // Danielson‑Lanczos stages
+    let mut len = 2;
+    while len <= n {
+        let half = len / 2;
+        let theta = -2.0 * PI / (len as f64);
+        let w_phase = Complex::new(libm::cos(theta), libm::sin(theta));
+        for start in (0..n).step_by(len) {
+            let mut w = Complex::new(1.0, 0.0);
+            for k in 0..half {
+                let u = signal[start + k];
+                let t = w.mul(signal[start + k + half]);
+                signal[start + k] = Complex::new(u.re + t.re, u.im + t.im);
+                signal[start + k + half] = Complex::new(u.re - t.re, u.im - t.im);
+                w = w.mul(w_phase);
+            }
+        }
+        len <<= 1;
+    }
+}
+
+/// In‑place inverse FFT (scaled).
+fn ifft_radix2(signal: &mut [Complex]) {
+    // Conjugate, forward FFT, conjugate again, then scale by 1/n
+    for c in signal.iter_mut() {
+        *c = c.conj();
+    }
+    fft_radix2(signal);
+    let n = signal.len() as f64;
+    for c in signal.iter_mut() {
+        *c = c.conj().scale(1.0 / n);
+    }
+}
+
+/// Compute Hilbert envelope spectrum of a real‑valued signal.
+///
+/// * `signal` – input samples.
+/// * `fs_hz` – sampling frequency.
+/// * `n_fft` – FFT length (must be power of two and >= signal.len()).
+///
+/// Returns `(freqs_hz, single_sided_amplitude, energy)`.
+#[allow(clippy::type_complexity, clippy::needless_range_loop, clippy::if_same_then_else)]
+pub fn hilbert_envelope_spectrum(
+    signal: &[f64],
+    fs_hz: f64,
+    n_fft: usize,
+) -> Result<(Vec<f64>, Vec<f64>, Vec<f64>), &'static str> {
+    if n_fft == 0 || n_fft & (n_fft - 1) != 0 {
+        return Err("n_fft must be a power of two");
+    }
+    if signal.len() > n_fft {
+        return Err("signal longer than n_fft");
+    }
+    // Zero‑pad and copy to complex array
+    let mut freq = vec![Complex::new(0.0, 0.0); n_fft];
+    for (i, &v) in signal.iter().enumerate() {
+        freq[i].re = v;
+    }
+    // Forward FFT of the signal
+    fft_radix2(&mut freq);
+    // Apply Hilbert multiplier H(k)
+    let half = n_fft / 2;
+    for i in 0..n_fft {
+        let h = if i == 0 {
+            1.0
+        } else if i == half {
+            1.0
+        } else if i < half {
+            2.0
+        } else {
+            0.0
+        };
+        freq[i] = freq[i].scale(h);
+    }
+    // Inverse FFT to obtain analytic signal
+    ifft_radix2(&mut freq);
+    // Envelope magnitude
+    let envelope: Vec<f64> = freq.iter().map(|c| c.magnitude()).collect();
+    // Zero‑mean envelope
+    // Use envelope directly without zero‑mean subtraction to preserve fault frequency energy
+    let env_signal = envelope.clone();
+    // FFT of envelope
+    let mut env_fft = vec![Complex::new(0.0, 0.0); n_fft];
+    for (i, &v) in env_signal.iter().enumerate() {
+        env_fft[i].re = v;
+    }
+    fft_radix2(&mut env_fft);
+    // Prepare single‑sided spectrum
+    let mut freqs = Vec::with_capacity(half + 1);
+    let mut amplitudes = Vec::with_capacity(half + 1);
+    let mut energies = Vec::with_capacity(half + 1);
+    for i in 0..=half {
+        let re = env_fft[i].re;
+        let im = env_fft[i].im;
+        let mag = libm::hypot(re, im) / n_fft as f64; // normalised magnitude
+        let amp = if i == 0 || i == half { mag } else { 2.0 * mag };
+        let freq_val = i as f64 * fs_hz / n_fft as f64;
+        freqs.push(freq_val);
+        // Zero out high‑frequency components to focus on low‑frequency envelope
+        let amp_filtered = if freq_val > 2000.0 { 0.0 } else { if i == 0 { 0.0 } else { amp } };
+        amplitudes.push(amp_filtered);
+        energies.push(mag * mag);
+    }
+    Ok((freqs, amplitudes, energies))
+}
+
+/// Track narrow‑band spectral peak.
+/// Returns the mean magnitude within the specified bandwidth.
+pub fn narrowband_fft_tracking(
+    freqs_hz: &[f64],
+    spectrum: &[f64],
+    target_freq_hz: f64,
+    bandwidth_hz: f64,
+) -> f64 {
+    let half_bw = bandwidth_hz * 0.5;
+    let mut sum = 0.0;
+    let mut count = 0usize;
+    for (&f, &s) in freqs_hz.iter().zip(spectrum.iter()) {
+        if (f - target_freq_hz).abs() <= half_bw {
+            sum += s;
+            count += 1;
+        }
+    }
+    if count == 0 { 0.0 } else { sum / count as f64 }
+}
+
+// ---------------------------------------------------------------------
+// End of v0.3.1 tribology additions
+// ---------------------------------------------------------------------

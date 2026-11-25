@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "anemocore"
-version = "0.3.0"
+version = "0.3.1"
 description = "Python bindings for the AnemoCore Rust core library via PyO3"
 readme = "../../README.md"
 requires-python = ">=3.10"
