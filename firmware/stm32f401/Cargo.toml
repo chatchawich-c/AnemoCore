@@ -1,0 +1,21 @@
+[package]
+name = "stm32f401"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+# No external deps, only core and our crate
+anemocore = { path = "../../crates/anemocore", default-features = false, features = [] }
+
+[lib]
+crate-type = ["rlib"]
+
+[profile.release]
+opt-level = "z"
+codegen-units = 1
+lto = true
+strip = true
+
+[workspace]
+# Ensure this crate is excluded from the default workspace build (already excluded in root Cargo.toml)

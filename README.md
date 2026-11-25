@@ -1,12 +1,8 @@
-# `AnemoCore`: Pure-Rust Multi-Scale Physics-Informed Wind Resource, Wake Aerodynamics & Turbine Prognostics Engine
+# AnemoCore
 
-[![Dual License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
-[![no_std Compatible](https://img.shields.io/badge/rust-no__std%20%2B%20std-orange.svg)](#architecture)
-[![Target: Cortex-M4](https://img.shields.io/badge/target-thumbv7em--none--eabihf-brightgreen.svg)](#embedded-hil)
+AnemoCore (`anemocore`) is a pure‑Rust computational engine for wind resource assessment, three‑dimensional Gaussian‑Curl wake modeling, sectoral AEP, signal processing, and embedded digital twins on micro‑controllers. The library is dual‑licensed under MIT OR Apache‑2.0 and conforms to IEC 61400‑12‑1, CIPM‑2007, ISO 281/16281, ISO 14179, and windIO parity requirements.
 
-**AnemoCore** (`anemocore`) is a **pure‑Rust** computational engine for wind resource assessment, 3‑D Gaussian‑Curl wake modeling & sectoral AEP, signal processing, and embedded digital twins on micro‑controllers.
-
-It originated during an exchange research stay at **Tallinn University of Technology (TalTech)**, Estonia, funded by the **EU Erasmus+ CBHE Project ECO‑WIND** (*Enhancing Capacity in Condition‑based Maintenance of Wind Energy*, Grant No. `ERASMUS-EDU-2025-CBHE-101177220`).
+The project was initiated during a research exchange at Tallinn University of Technology, Estonia, with funding from the EU Erasmus+ CBHE Project ECO‑WIND (Grant No. ERASMUS‑EDU‑2025‑CBHE‑101177220).
 
 ---
 

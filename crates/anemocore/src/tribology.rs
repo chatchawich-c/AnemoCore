@@ -567,3 +567,52 @@ mod tests {
         assert!(d_damaging > 0.0);
     }
 }
+
+// Added v0.3.0 tribology functions
+/// Mixed EHL asperity load calculation (placeholder implementation).
+pub fn mixed_ehl_asperity_load(l_we: f64, l_sd: f64, sigma: f64) -> f64 {
+    l_we * sigma + l_sd * sigma.sqrt()
+}
+
+/// Micropitting fatigue index based on stress and load cycles.
+pub fn micropitting_fatigue_index(stress: f64, cycles: u64) -> f64 {
+    if cycles == 0 {
+        0.0
+    } else {
+        stress * (cycles as f64).ln()
+    }
+}
+
+/// Bearing spall progression estimation.
+pub fn bearing_spall_progression(spall_size: f64, time_hours: f64) -> f64 {
+    spall_size + 0.01 * spall_size * time_hours
+}
+
+/// Lubricant degradation viscosity model.
+pub fn lubricant_degradation_viscosity(temp_c: f64, shear_rate: f64) -> f64 {
+    let base_visc = 0.001_f64;
+    let temp_factor = (-0.02 * temp_c).exp();
+    let shear_factor = shear_rate * 1e-6;
+    base_visc * temp_factor + shear_factor
+}
+
+#[cfg(test)]
+mod v03_tests {
+    use super::*;
+    #[test]
+    fn test_mixed_ehl_asperity_load() {
+        assert!(mixed_ehl_asperity_load(1e-6, 2e-6, 5e-6) > 0.0);
+    }
+    #[test]
+    fn test_micropitting_fatigue_index() {
+        assert!(micropitting_fatigue_index(150.0, 1_000_000) > 0.0);
+    }
+    #[test]
+    fn test_bearing_spall_progression() {
+        assert!(bearing_spall_progression(0.000_1, 10.0) > 0.000_1);
+    }
+    #[test]
+    fn test_lubricant_degradation_viscosity() {
+        assert!(lubricant_degradation_viscosity(40.0, 500.0) > 0.0);
+    }
+}

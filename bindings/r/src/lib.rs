@@ -337,3 +337,262 @@ extendr_module! {
     fn anemocore_iso16281_tilt_factor;
     fn anemocore_caputo_peridynamics;
 }
+
+// ---------------------------------------------------------------------------
+// 5. NEW QUASICRYSTAL WPT & QMC UTILITIES (R bindings)
+// ---------------------------------------------------------------------------
+use anemocore::quasicrystal_wpt::{shift_add_forward_step, shift_add_inverse_step, decompose};
+use anemocore::fib_qmc::qmc_weibull_cubic_expectation;
+
+#[extendr]
+fn r_quasicrystal_wpt_forward(signal: Vec<i32>) -> List {
+    let mut lo = vec![0i32; signal.len()];
+    let mut hi = vec![0i32; signal.len()];
+    shift_add_forward_step(&signal, &mut lo, &mut hi);
+    let mut lst = List::new();
+    lst.set("lo", lo);
+    lst.set("hi", hi);
+    lst
+}
+
+#[extendr]
+fn r_quasicrystal_wpt_inverse(lo: Vec<i32>, hi: Vec<i32>) -> Vec<i32> {
+    let mut recon = vec![0i32; lo.len() + hi.len()];
+    shift_add_inverse_step(&lo, &hi, &mut recon);
+    recon
+}
+
+#[extendr]
+fn r_quasicrystal_wpt_decompose(signal: Vec<i32>) -> List {
+    let (coeffs, len) = decompose(&signal);
+    let mut lst = List::new();
+    lst.set("coeffs", coeffs.to_vec());
+    lst.set("len", len);
+    lst
+}
+
+#[extendr]
+fn r_fib_qmc_one_sweep(k_weib: f64, c_weib: f64, n_points: usize) -> f64 {
+    qmc_weibull_cubic_expectation(k_weib, c_weib, n_points)
+}
+
+// ---------------------------------------------------------------------------
+// 6. NEW PHYLLOTAXIS WAKE UTILITIES (R bindings)
+// ---------------------------------------------------------------------------
+use anemocore::phyllotaxis_wake::{vogel_phyllotaxis_layout, structure_factor_2d, golden_yaw_staggering, step_aerothermal_wake, compute_ctd_hours, Golden_ANGLE};
+
+#[extendr]
+fn r_vogel_phyllotaxis_layout(n: usize, r_min: f64, c: f64) -> List {
+    let (xs, ys) = vogel_phyllotaxis_layout(n, r_min, c);
+    let mut lst = List::new();
+    lst.set("x", xs);
+    lst.set("y", ys);
+    lst
+}
+
+#[extendr]
+fn r_structure_factor_2d(vx: Vec<f64>, vy: Vec<f64>, grid: List) -> List {
+    // Expect grid to be a list of two numeric vectors of length 2
+    let gx = grid.get::<Vec<f64>>("gx").unwrap_or(vec![0.0, 0.0]);
+    let gy = grid.get::<Vec<f64>>("gy").unwrap_or(vec![0.0, 0.0]);
+    let grid_arr = [[gx[0], gx[1]], [gy[0], gy[1]]];
+    let res = structure_factor_2d(&vx, &vy, &grid_arr);
+    let mut lst = List::new();
+    for (i, vec) in res.iter().enumerate() {
+        lst.set(&format!("row{}", i + 1), vec.clone());
+    }
+    lst
+}
+
+#[extendr]
+fn r_golden_yaw_staggering(vx: Vec<f64>, vy: Vec<f64>, rotor_diam: f64, wind_speed: f64, spacing: f64) -> Vec<f64> {
+    golden_yaw_staggering(&vx, &vy, rotor_diam, wind_speed, spacing)
+}
+
+#[extendr]
+fn r_step_aerothermal_wake(vx: Vec<f64>, vy: Vec<f64>, spec: List, hub_height: f64, wind_speed: f64, t_amb: f64, yaw: Vec<f64>, t_oil: Vec<f64>, dt: f64) -> List {
+    // Convert spec list to AeroThermalSpec struct (simplified: only needed fields)
+    let at_spec = anemocore::phyllotaxis_wake::AeroThermalSpec {
+        rotor_diam_m: spec.get::<f64>("rotor_diam_m").unwrap_or(120.0),
+        rated_power_w: spec.get::<f64>("rated_power_w").unwrap_or(3.0e6),
+        kappa_th: spec.get::<f64>("kappa_th").unwrap_or(1.5e6),
+        baseline_loss_w: spec.get::<f64>("baseline_loss_w").unwrap_or(5.0e4),
+        g_th: spec.get::<f64>("g_th").unwrap_or(500.0),
+        t_amb_k: spec.get::<f64>("t_amb_k").unwrap_or(288.15),
+    };
+    let mut t_oil_mut = t_oil.clone();
+    let step = step_aerothermal_wake(&vx, &vy, &at_spec, hub_height, wind_speed, t_amb, &yaw, &mut t_oil_mut, dt);
+    let mut lst = List::new();
+    lst.set("t_oil_k", step.t_oil_k);
+    lst.set("t_oil_out", t_oil_mut);
+    lst
+}
+
+#[extendr]
+fn r_compute_ctd_hours(t_oil_k: Vec<f64>, spec: List, dt: f64) -> f64 {
+    let at_spec = anemocore::phyllotaxis_wake::AeroThermalSpec {
+        rotor_diam_m: spec.get::<f64>("rotor_diam_m").unwrap_or(120.0),
+        rated_power_w: spec.get::<f64>("rated_power_w").unwrap_or(3.0e6),
+        kappa_th: spec.get::<f64>("kappa_th").unwrap_or(1.5e6),
+        baseline_loss_w: spec.get::<f64>("baseline_loss_w").unwrap_or(5.0e4),
+        g_th: spec.get::<f64>("g_th").unwrap_or(500.0),
+        t_amb_k: spec.get::<f64>("t_amb_k").unwrap_or(288.15),
+    };
+    compute_ctd_hours(&t_oil_k, &at_spec, dt)
+}
+
+// ---------------------------------------------------------------------------
+// 7. NEW AERODYNAMIC FUNCTIONS (R bindings)
+// ---------------------------------------------------------------------------
+use anemocore::aero::{prandtl_tip_hub_loss, bem_steady_rotor, beddoes_leishman_stall, aero_torque_thrust_curve};
+
+#[extendr]
+fn r_prandtl_tip_hub_loss(r_tip: f64, r_hub: f64, r_rotor: f64, lambda: f64) -> List {
+    let (f_tip, f_hub, f_total) = prandtl_tip_hub_loss(r_tip, r_hub, r_rotor, lambda);
+    let mut lst = List::new();
+    lst.set("f_tip", f_tip);
+    lst.set("f_hub", f_hub);
+    lst.set("f_total", f_total);
+    lst
+}
+
+#[extendr]
+fn r_bem_steady_rotor(r: f64, chord: f64, twist_deg: f64, phi_rad: f64, lambda: f64, cl: f64, cd: f64, rho: f64) -> List {
+    let (a, a_prime) = bem_steady_rotor(r, chord, twist_deg, phi_rad, lambda, cl, cd, rho);
+    let mut lst = List::new();
+    lst.set("a", a);
+    lst.set("a_prime", a_prime);
+    lst
+}
+
+#[extendr]
+fn r_beddoes_leishman_stall(cl_static: f64, alpha_deg: f64, dt: f64, state: f64) -> List {
+    let mut s = state;
+    let (attached, lift) = beddoes_leishman_stall(cl_static, alpha_deg, dt, &mut s);
+    let mut lst = List::new();
+    lst.set("attached", attached);
+    lst.set("lift", lift);
+    lst.set("state", s);
+    lst
+}
+
+#[extendr]
+fn r_aero_torque_thrust_curve(wind_speeds: Vec<f64>, r_rotor: f64, omega: f64, rho: f64, c_p: f64) -> List {
+    let res = aero_torque_thrust_curve(&wind_speeds, r_rotor, omega, rho, c_p);
+    // Return as a list of vectors
+    let mut lst = List::new();
+    let (ws, torque, thrust, power, cp, ct): (Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>) = res.into_iter().fold(
+        (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()),
+        |mut acc, tup| {
+            acc.0.push(tup.0);
+            acc.1.push(tup.1);
+            acc.2.push(tup.2);
+            acc.3.push(tup.3);
+            acc.4.push(tup.4);
+            acc.5.push(tup.5);
+            acc
+        },
+    );
+    lst.set("wind_speed", ws);
+    lst.set("torque", torque);
+    lst.set("thrust", thrust);
+    lst.set("power", power);
+    lst.set("cp", cp);
+    lst.set("ct", ct);
+    lst
+}
+
+// ---------------------------------------------------------------------------
+// 8. NEW TRIBOLOGY EXTENSIONS (R bindings)
+// ---------------------------------------------------------------------------
+use anemocore::tribology::{mixed_ehl_asperity_load, micropitting_fatigue_index, bearing_spall_progression, lubricant_degradation_viscosity};
+
+#[extendr]
+fn r_mixed_ehl_asperity_load(u: f64, v: f64, w: f64, x: f64, y: f64, z: f64, q: f64) -> f64 {
+    mixed_ehl_asperity_load(u, v, w, x, y, z, q)
+}
+
+#[extendr]
+fn r_micropitting_fatigue_index(u: f64, v: f64, w: f64, x: f64, y: f64, z: f64, q: f64) -> f64 {
+    micropitting_fatigue_index(u, v, w, x, y, z, q)
+}
+
+#[extendr]
+fn r_bearing_spall_progression(a: f64, b: f64, c: f64, d: f64) -> f64 {
+    bearing_spall_progression(a, b, c, d)
+}
+
+#[extendr]
+fn r_lubricant_degradation_viscosity(e: f64, f: f64, g: f64) -> f64 {
+    lubricant_degradation_viscosity(e, f, g)
+}
+
+// ---------------------------------------------------------------------------
+// 9. NEW SCADA FLEET FUNCTIONS (R bindings)
+// ---------------------------------------------------------------------------
+use anemocore::scada_fleet::{sarimax_fit, sarimax_forecast_residuals, fleet_cross_turbine_residual, multi_domain_health_index, scada_missingness_diagnostic};
+
+#[extendr]
+fn r_sarimax_fit(y: Vec<f64>, exog: Vec<f64>) -> List {
+    let params = sarimax_fit(&y, &exog);
+    let mut lst = List::new();
+    lst.set("params", params);
+    lst
+}
+
+#[extendr]
+fn r_sarimax_forecast_residuals(y: Vec<f64>, params: List) -> Vec<f64> {
+    let pars: Vec<f64> = params.get::<Vec<f64>>("params").unwrap_or_default();
+    sarimax_forecast_residuals(&y, &pars)
+}
+
+#[extendr]
+fn r_fleet_cross_turbine_residual(data: List) -> f64 {
+    // Placeholder: just return 0.0 for now
+    0.0
+}
+
+#[extendr]
+fn r_multi_domain_health_index(metrics: Vec<f64>) -> f64 {
+    multi_domain_health_index(&metrics)
+}
+
+#[extendr]
+fn r_scada_missingness_diagnostic(df: List) -> List {
+    // Placeholder: return empty list
+    List::new()
+}
+
+// ---------------------------------------------------------------------------
+// 10. NEW ECONOMIC RISK FUNCTIONS (R bindings)
+// ---------------------------------------------------------------------------
+use anemocore::econ_risk::{compute_lcoe, compute_lcoh, om_unscheduled_cost_model, coupled_monte_carlo_risk, var_cvar_project_npv};
+
+#[extendr]
+fn r_compute_lcoe(capex: f64, fixed_opex: f64, variable_opex: f64, discount_rate: f64, lifetime_years: f64, annual_energy_mwh: f64) -> f64 {
+    compute_lcoe(capex, fixed_opex, variable_opex, discount_rate, lifetime_years, annual_energy_mwh)
+}
+
+#[extendr]
+fn r_compute_lcoh(capex: f64, fixed_opex: f64, variable_opex: f64, discount_rate: f64, lifetime_years: f64, annual_energy_mwh: f64, efficiency_h2: f64) -> f64 {
+    compute_lcoh(capex, fixed_opex, variable_opex, discount_rate, lifetime_years, annual_energy_mwh, efficiency_h2)
+}
+
+#[extendr]
+fn r_om_unscheduled_cost_model(failure_rate_per_year: f64, repair_duration_hours: f64, mobilization_cost: f64, downtime_revenue_loss_per_hour: f64) -> f64 {
+    om_unscheduled_cost_model(failure_rate_per_year, repair_duration_hours, mobilization_cost, downtime_revenue_loss_per_hour)
+}
+
+#[extendr]
+fn r_coupled_monte_carlo_risk(seed: u64, n_samples: usize, wind_stddev: f64, drivetrain_failure_rate: f64, price_volatility: f64) -> Vec<f64> {
+    coupled_monte_carlo_risk(seed, n_samples, wind_stddev, drivetrain_failure_rate, price_volatility)
+}
+
+#[extendr]
+fn r_var_cvar_project_npv(samples: Vec<f64>, confidence: f64) -> List {
+    let (var, cvar) = var_cvar_project_npv(&samples, confidence);
+    let mut lst = List::new();
+    lst.set("var", var);
+    lst.set("cvar", cvar);
+    lst
+}

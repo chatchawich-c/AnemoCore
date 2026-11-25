@@ -12,6 +12,11 @@ from ._core import (
     py_iso281_l10m,
     py_iso16281_tilt_factor,
     py_caputo_peridynamics_damage,
+    # New tribology functions
+    py_mixed_ehl_asperity_load,
+    py_micropitting_fatigue_index,
+    py_bearing_spall_progression,
+    py_lubricant_degradation_viscosity,
 )
 
 class Drivetrain:
@@ -27,18 +32,20 @@ class Drivetrain:
     def __init__(self):
         pass
 
-    def run(self,
-            temps_k: np.ndarray,
-            t_ref_k: float,
-            ea_j_mol: float,
-            dt_sec: float,
-            pressure_pa: float,
-            rh: float,
-            gearbox_params: dict,
-            ehl_params: dict,
-            bearing_params: dict,
-            tilt_params: dict,
-            caputo_params: dict) -> dict:
+    def run(
+        self,
+        temps_k: np.ndarray,
+        t_ref_k: float,
+        ea_j_mol: float,
+        dt_sec: float,
+        pressure_pa: float,
+        rh: float,
+        gearbox_params: dict,
+        ehl_params: dict,
+        bearing_params: dict,
+        tilt_params: dict,
+        caputo_params: dict,
+    ) -> dict:
         """Execute the full analysis pipeline.
 
         Parameters
@@ -116,3 +123,32 @@ class Drivetrain:
             "tilt_factor": tilt_factor,
             "caputo_damage": caputo_damage,
         }
+
+    # New tribology wrapper methods
+    def mixed_ehl_asperity_load(self, l_we: float, l_sd: float, sigma: float) -> float:
+        """Wrapper for mixed EHL asperity load.
+
+        Parameters correspond to ``l_we``, ``l_sd``, and ``sigma``.
+        """
+        return py_mixed_ehl_asperity_load(l_we, l_sd, sigma)
+
+    def micropitting_fatigue_index(self, stress: float, cycles: int) -> float:
+        """Wrapper for micropitting fatigue index.
+
+        ``cycles`` is an integer number of cycles.
+        """
+        return py_micropitting_fatigue_index(stress, cycles)
+
+    def bearing_spall_progression(self, spall_size: float, time_hours: float) -> float:
+        """Wrapper for bearing spall progression.
+
+        ``spall_size`` and ``time_hours`` as floats.
+        """
+        return py_bearing_spall_progression(spall_size, time_hours)
+
+    def lubricant_degradation_viscosity(self, temp_c: float, shear_rate: float) -> float:
+        """Wrapper for lubricant degradation viscosity.
+
+        ``temp_c`` temperature in Celsius, ``shear_rate`` shear rate.
+        """
+        return py_lubricant_degradation_viscosity(temp_c, shear_rate)

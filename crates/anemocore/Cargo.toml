@@ -11,13 +11,11 @@ categories.workspace = true
 description = "Pure-Rust (#![no_std] compatible) mathematical kernels for wind resource assessment, wake aerodynamics, and turbine prognostics."
 
 [features]
-default = ["std"]
-std = [
-    "dep:rayon",
-    "dep:rustfft",
-    "dep:serde",
-    "dep:serde_json",
-]
+default = ["std", "aero", "fleet", "econ"]
+std = ["rayon", "rustfft", "serde", "serde_json"]
+aero = ["std"]
+fleet = ["std"]
+econ = ["std"]
 # Optional integration with SEMFlow (sharing faer = "0.20")
 sem = ["std"]
 

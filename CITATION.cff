@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use AnemoCore in your research or benchmarks, please cite it using the metadata from this file."
 title: "AnemoCore"
-version: "0.2.0"
+version: "0.3.0"
 date-released: "2026-11-24"
 license: MIT
 doi: 10.5281/zenodo.24495520
@@ -20,8 +20,6 @@ keywords:
   - pyo3
   - eco-wind
 abstract: >
-  Core Rust, PyO3 Python, and R computational library supporting the 66-paper
-  ECO-WIND benchmark and condition-based maintenance research program, funded
-  by the European Union Erasmus+ CBHE project ECO-WIND (Grant No.
-  ERASMUS-EDU-2025-CBHE-101177220) and designed for low-footprint execution
+  Core Rust, PyO3 Python, and R computational library supporting the ECO‑WIND benchmark and condition-based maintenance research program, funded
+  by the European Union Erasmus+ CBHE project ECO‑WIND (Grant No. ERASMUS‑EDU‑2025‑CBHE‑101177220) and designed for low-footprint execution
   (wheel size < 5 MiB, benchmark Peak RSS <= 150.0 MiB).

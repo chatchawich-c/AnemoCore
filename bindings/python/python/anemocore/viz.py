@@ -35,3 +35,36 @@ def plot_aep_series(aep_series: Any, title: str = "Annual Energy Production") ->
     ax.set_ylabel("AEP (MWh)")
     plt.grid(True)
     plt.show()
+
+# New lazy‑load visualization helpers
+def bearing_health_trend(data: Any, **kwargs) -> Any:
+    """Plot bearing health trend.
+    ``data`` should be a sequence of health metric values.
+    ``matplotlib`` is imported lazily.
+    """
+    plt = _lazy_matplotlib()
+    fig, ax = plt.subplots()
+    ax.plot(data, **kwargs)
+    ax.set_title("Bearing Health Trend")
+    ax.set_xlabel("Time Index")
+    ax.set_ylabel("Health Metric")
+    plt.grid(True)
+    plt.show()
+    return fig
+
+def economic_risk_fan_chart(risk_data: dict, **kwargs) -> Any:
+    """Plot economic risk fan chart.
+    ``risk_data`` is a mapping with keys like ``'percentiles'`` (list of values)
+    and ``'scenario'`` (list of scenario identifiers).
+    """
+    plt = _lazy_matplotlib()
+    fig, ax = plt.subplots()
+    percentiles = risk_data.get('percentiles', [])
+    scenario = risk_data.get('scenario', range(len(percentiles)))
+    ax.fill_between(scenario, percentiles, step='pre', alpha=0.3, **kwargs)
+    ax.set_title("Economic Risk Fan Chart")
+    ax.set_xlabel("Scenario")
+    ax.set_ylabel("Risk Metric")
+    plt.grid(True)
+    plt.show()
+    return fig

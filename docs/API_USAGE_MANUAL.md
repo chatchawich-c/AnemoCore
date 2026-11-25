@@ -1,6 +1,6 @@
-# AnemoCore v0.2.0 — API & Function Reference Manual
+# AnemoCore v0.3.0 — API & Function Reference Manual
 
-> **Release:** `v0.2.0` | **Rust Crate:** `anemocore` (`anemocore_crate`) | **Python Package:** `anemocore` (`PyO3` / `cp39-abi3`) | **R Package:** `anemocorer` (`extendr`)
+> **Release:** `v0.3.0` | **Rust Crate:** `anemocore` (`anemocore_crate`) | **Python Package:** `anemocore` (`PyO3` / `cp39-abi3`) | **R Package:** `anemocorer` (`extendr`)
 
 ---
 

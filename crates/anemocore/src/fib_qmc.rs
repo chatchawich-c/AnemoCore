@@ -170,11 +170,8 @@ pub fn golden_section_min<F: Fn(f64) -> f64>(
     let mut f_mu = f(mu);
     let mut iter = 0;
 
-    for _ in 0..max_iter {
+    while (b - a) >= tol && iter < max_iter {
         iter += 1;
-        if (b - a) < tol {
-            break;
-        }
         if f_lam < f_mu {
             b = mu;
             mu = lam;

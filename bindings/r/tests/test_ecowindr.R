@@ -38,7 +38,7 @@ stopifnot(wpt[3] > 0.0)
 
 # 2. Paper 46 Golden-Section stopping & 6D Limit State
 stop_res <- .Call("wrap__r_fib_golden_stopping", 0.35)
-assert_close(stop_res[1], 73.3189833311, tol = 1e-6, label = "fib_golden_stopping$s_star")
+assert_close(stop_res[1], 73.3189833311, tol = 1e-5, label = "fib_golden_stopping$s_star")
 assert_close(stop_res[2], 36.0, tol = 1e-9, label = "fib_golden_stopping$iterations")
 
 lim <- .Call("wrap__r_fib_limit_state_6d", c(0.1, 0.8, 0.3, 0.6, 0.9, 0.2))

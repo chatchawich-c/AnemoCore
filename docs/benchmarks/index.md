@@ -1,24 +1,24 @@
 # ECO‑WIND Benchmarks Overview
 
-This section documents the **66‑paper ECO‑WIND benchmark suite** evaluating wind‑energy resource assessment (WRA), wake modeling, operational assessment (OA), and condition‑based maintenance algorithms powered by **AnemoCore v0.2.0**.
+This section documents the ECO‑WIND benchmark suite evaluating wind‑energy resource assessment (WRA), wake modeling, operational assessment (OA), and condition‑based maintenance algorithms.
 
-* **Architecture**: The benchmark suite lives in the external [`ecowind-benchmarks`](https://github.com/chatchawich-c/AnemoCore) repository and invokes the compiled **AnemoCore v0.2.0** Rust‑backed Python wheel (`anemocore` / `anemocore._core` via `PyO3` `cp39-abi3`) for core numerical execution.
+* **Architecture**: The benchmark suite lives in the external [`ecowind-benchmarks`](https://github.com/chatchawich-c/AnemoCore) repository and invokes the compiled **AnemoCore v0.3.0** Rust‑backed Python wheel (`anemocore` / `anemocore._core` via `PyO3` `cp39-abi3`) for core numerical execution.
 * **Zero‑duplication policy**: No raw datasets or benchmark scripts are duplicated into this repository. All benchmark data are streamed directly from the external benchmark repository at runtime.
 * **Citation**: Please cite the benchmark suite via its Zenodo archive DOI `10.5281/zenodo.24496449` (placeholder).
 * **Funding attribution**: This work is supported by the **European Union Erasmus+ Capacity Building in Higher Education (CBHE)** project **ECO‑WIND** (*Enhancing Capacity in Condition-based Maintenance of Wind Energy*, **Grant No. `ERASMUS‑EDU‑2025‑CBHE‑101177220`**).
 
 ---
 
-## Release v0.2.0 Runtime & Memory Footprint
+## Release v0.3.0 Runtime & Memory Footprint
 
-AnemoCore v0.2.0 enforces strict lightweight deployment constraints so that all 66 benchmark workflows execute comfortably on edge devices and 8 GB RAM workstations:
+AnemoCore v0.3.0 maintains a lightweight deployment profile suitable for edge devices and typical workstations:
 
-| Metric | Target Budget | AnemoCore v0.2.0 (`cp39-abi3` macOS x86_64) | Status |
+| Metric | Target Budget | AnemoCore v0.3.0 (`cp39-abi3` macOS x86_64) | Status |
 | :--- | :--- | :--- | :--- |
 | **Stripped Wheel Size** | `< 5.0 MiB` | **`485 KiB`** (`0.47 MiB`) | Pass |
 | **Base Import Peak RSS** | `< 150.0 MiB` | **`67.8 MiB`** (lazy `anemocore.viz`) | Pass |
 | **Wake Superposition Parity** | `<= 1e-4` rel. tol. | Verified vs. `windIO` (`Jensen`, `Bastankhah2014/2016`) | Pass |
-| **Supported Scope** | 66 Research Papers | WRA I/O, Shear, Wake/OA, Drivetrain Tribology, KAM-VSG | Pass |
+| **Supported Scope** | – | WRA I/O, Shear, Wake/OA, Drivetrain Tribology, KAM-VSG | Pass |
 
 ---
 

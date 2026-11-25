@@ -51,7 +51,7 @@ pub fn extract_wpt_indicators_vec(v: &[f64]) -> Option<WptIndicators> {
     }
     // Simple placeholder calculations: mean for h3_renyi, variance for p_high.
     let mean = v.iter().copied().sum::<f64>() / v.len() as f64;
-    let var = v.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / v.len() as f64;
+    let var = v.iter().map(|&x| (x - mean) * (x - mean)).sum::<f64>() / v.len() as f64;
     Some(WptIndicators {
         h3_renyi: mean,
         p_high: var,

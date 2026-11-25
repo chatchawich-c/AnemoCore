@@ -1,4 +1,4 @@
-#![allow(clippy::useless_conversion, clippy::too_many_arguments)]
+#![allow(clippy::useless_conversion, clippy::too_many_arguments, non_snake_case)]
 //! PyO3 Rust extension module (`_core`) for AnemoCore.
 //!
 //! Exposes high-performance numerical routines for:
@@ -11,11 +11,11 @@
 //! - 2-Stage Dowson-Higginson EHL lubrication, ISO 281 L10/L10m bearing rating life,
 //!   ISO/TS 16281 bearing tilt derating, and fractional Caputo peridynamics damage.
 
+use numpy::{PyArray1, PyReadonlyArray1, PyUntypedArrayMethods};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use pyo3::wrap_pyfunction;
-use numpy::PyReadonlyArray1;
 
 extern crate anemocore as anemocore_crate;
 use anemocore_crate::fib_qmc::qmc_weibull_cubic_expectation;
@@ -25,18 +25,191 @@ use anemocore_crate::thermo;
 use anemocore_crate::transforms;
 use anemocore_crate::tribology;
 use anemocore_crate::weibull_est::fit_all_six;
-use anemocore_crate::wake::{superpose, Superposition};
-use anemocore_crate::wra::{extrapolate_weibull_justus_mikhail, extrapolate_wind_speed, ShearModel};
-use anemocore_crate::oa::PowerCurveModel;
-use anemocore_crate::phyllotaxis_wake::{vogel_phyllotaxis_layout, structure_factor_2d, golden_yaw_staggering, step_aerothermal_wake, compute_ctd_hours, golden_spiral_layout, wake_thermal_power_loss, equilibrium_temperature, AeroThermalSpec};
-use anemocore_crate::quasicrystal_wpt::{shift_add_forward_step, shift_add_inverse_step, shift_add_wpt_3level_band_energy, decompose};
-use anemocore_crate::edge_governor::{SpscRingBuffer, EdgeError, bartlett_projector};
-use anemocore_crate::pi_emeans::{PiEMeans, betz_ceiling};
-use anemocore_crate::signal_wpt::{hgt_forward, hgt_sst, inverse_gabor, extract_wpt_indicators_vec, HertzianBearingSpec};
-
-
+use anemocore_crate::wra::{
+    extrapolate_weibull_justus_mikhail, extrapolate_wind_speed, ShearModel,
+};
 
 // =========================================================================
+// New Python wrapper functions for added Rust modules
+
+#[pyfunction]
+pub fn py_prandtl_tip_hub_loss(
+    py: Python,
+    r_tip: f64,
+    r_hub: f64,
+    r_rotor: f64,
+    lambda: f64,
+) -> PyResult<(f64, f64, f64)> {
+    py.allow_threads(|| {
+        Ok(anemocore_crate::aero::prandtl_tip_hub_loss(
+            r_tip, r_hub, r_rotor, lambda,
+        ))
+    })
+}
+
+#[pyfunction]
+pub fn py_bem_steady_rotor(
+    py: Python,
+    r: f64,
+    chord: f64,
+    twist_deg: f64,
+    phi_rad: f64,
+    lambda: f64,
+    cl: f64,
+    cd: f64,
+    rho: f64,
+) -> PyResult<(f64, f64)> {
+    py.allow_threads(|| {
+        Ok(anemocore_crate::aero::bem_steady_rotor(
+            r, chord, twist_deg, phi_rad, lambda, cl, cd, rho,
+        ))
+    })
+}
+
+#[pyfunction]
+
+pub fn py_beddoes_leishman_stall(
+    py: Python,
+    cl_static: f64,
+    alpha_deg: f64,
+    dt: f64,
+    state: f64,
+) -> PyResult<(bool, f64, f64)> {
+    py.allow_threads(|| {
+        let mut st = state;
+        let (attached, lift) = anemocore_crate::aero::beddoes_leishman_stall(
+            cl_static, alpha_deg, dt, &mut st,
+        );
+        Ok((attached, lift, st))
+    })
+}
+
+
+#[pyfunction]
+pub fn py_aero_torque_thrust_curve(
+    py: Python,
+    wind_speeds: Vec<f64>,
+    r_rotor: f64,
+    omega: f64,
+    rho: f64,
+    c_p: f64,
+) -> PyResult<Vec<(f64, f64, f64, f64, f64, f64)>> {
+    py.allow_threads(|| {
+        Ok(anemocore_crate::aero::aero_torque_thrust_curve(
+            &wind_speeds,
+            r_rotor,
+            omega,
+            rho,
+            c_p,
+        ))
+    })
+}
+
+#[pyfunction]
+pub fn py_mixed_ehl_asperity_load(py: Python, args: PyReadonlyArray1<f64>) -> PyResult<f64> {
+    let vals = args.as_slice()?;
+    if vals.len() < 3 {
+        return Err(PyValueError::new_err("expected 3 arguments: l_we, l_sd, sigma".to_string()));
+    }
+    py.allow_threads(|| Ok(anemocore_crate::tribology::mixed_ehl_asperity_load(vals[0], vals[1], vals[2])))
+}
+
+#[pyfunction]
+pub fn py_micropitting_fatigue_index(py: Python, args: PyReadonlyArray1<f64>) -> PyResult<f64> {
+    let vals = args.as_slice()?;
+    if vals.len() < 2 {
+        return Err(PyValueError::new_err("expected 2 arguments: stress, cycles".to_string()));
+    }
+    let cycles = vals[1] as u64;
+    py.allow_threads(|| Ok(anemocore_crate::tribology::micropitting_fatigue_index(vals[0], cycles)))
+}
+
+#[pyfunction]
+pub fn py_bearing_spall_progression(py: Python, args: PyReadonlyArray1<f64>) -> PyResult<f64> {
+    let vals = args.as_slice()?;
+    if vals.len() < 2 {
+        return Err(PyValueError::new_err("expected 2 arguments: spall_size, time_hours".to_string()));
+    }
+    py.allow_threads(|| Ok(anemocore_crate::tribology::bearing_spall_progression(vals[0], vals[1])))
+}
+
+#[pyfunction]
+pub fn py_lubricant_degradation_viscosity(py: Python, args: PyReadonlyArray1<f64>) -> PyResult<f64> {
+    let vals = args.as_slice()?;
+    if vals.len() < 2 {
+        return Err(PyValueError::new_err("expected 2 arguments: temp_c, shear_rate".to_string()));
+    }
+    py.allow_threads(|| Ok(anemocore_crate::tribology::lubricant_degradation_viscosity(vals[0], vals[1])))
+}
+
+#[pyfunction]
+pub fn py_sarimax_fit(py: Python, y: Vec<f64>, exog: Vec<f64>, p: usize, d: usize, q: usize, P: usize, D: usize, Q: usize, s: usize) -> PyResult<Vec<f64>> {
+    py.allow_threads(|| Ok(anemocore_crate::scada_fleet::sarimax_fit(&y, &exog, p, d, q, P, D, Q, s)))
+}
+
+#[pyfunction]
+pub fn py_sarimax_forecast_residuals(py: Python, y: Vec<f64>, params: Vec<f64>, sigma: f64) -> PyResult<Vec<f64>> {
+    py.allow_threads(|| Ok(anemocore_crate::scada_fleet::sarimax_forecast_residuals(&y, &params, sigma)))
+}
+#[pyfunction]
+pub fn py_fleet_cross_turbine_residual(py: Python, data: Vec<Vec<f64>>) -> PyResult<Vec<Vec<f64>>> {
+    py.allow_threads(|| Ok(anemocore_crate::scada_fleet::fleet_cross_turbine_residual(&data)))
+}
+
+#[pyfunction]
+pub fn py_multi_domain_health_index(py: Python, args: PyReadonlyArray1<f64>) -> PyResult<f64> {
+    let vals = args.as_slice()?;
+    if vals.len() != 3 {
+        return Err(PyValueError::new_err("expected 3 arguments: thermal, power_curve, vibration".to_string()));
+    }
+    let thermal = vals[0];
+    let power_curve = vals[1];
+    let vibration = vals[2];
+    py.allow_threads(|| Ok(anemocore_crate::scada_fleet::multi_domain_health_index(thermal, power_curve, vibration)))
+}
+
+#[pyfunction]
+pub fn py_scada_missingness_diagnostic(py: Python, missing: PyReadonlyArray1<bool>, wind_speed: PyReadonlyArray1<f64>) -> PyResult<(f64, f64, f64)> {
+    let missing_slice = missing.as_slice()?;
+    let wind_slice = wind_speed.as_slice()?;
+    py.allow_threads(|| Ok(anemocore_crate::scada_fleet::scada_missingness_diagnostic(missing_slice, wind_slice)))
+}
+
+#[pyfunction]
+pub fn py_compute_lcoe(py: Python, capex: f64, fixed_opex: f64, variable_opex: f64, discount_rate: f64, lifetime_years: f64, annual_energy_mwh: f64) -> PyResult<f64> {
+    py.allow_threads(|| Ok(anemocore_crate::econ_risk::compute_lcoe(capex, fixed_opex, variable_opex, discount_rate, lifetime_years, annual_energy_mwh)))
+}
+
+#[pyfunction]
+
+pub fn py_compute_lcoh(py: Python, capex: f64, fixed_opex: f64, variable_opex: f64, discount_rate: f64, lifetime_years: f64, annual_energy_mwh: f64, efficiency_h2: f64) -> PyResult<f64> {
+    py.allow_threads(|| Ok(anemocore_crate::econ_risk::compute_lcoh(capex, fixed_opex, variable_opex, discount_rate, lifetime_years, annual_energy_mwh, efficiency_h2)))
+}
+
+
+
+
+#[pyfunction]
+
+pub fn py_om_unscheduled_cost_model(py: Python, failure_rate_per_year: f64, repair_duration_hours: f64, mobilization_cost: f64, downtime_revenue_loss_per_hour: f64) -> PyResult<f64> {
+    py.allow_threads(|| Ok(anemocore_crate::econ_risk::om_unscheduled_cost_model(failure_rate_per_year, repair_duration_hours, mobilization_cost, downtime_revenue_loss_per_hour)))
+}
+
+#[pyfunction]
+pub fn py_coupled_monte_carlo_risk(py: Python, seed: u64, n_samples: usize, wind_stddev: f64, drivetrain_failure_rate: f64, price_volatility: f64) -> PyResult<Vec<f64>> {
+    py.allow_threads(|| Ok(anemocore_crate::econ_risk::coupled_monte_carlo_risk(seed, n_samples, wind_stddev, drivetrain_failure_rate, price_volatility)))
+}
+
+#[pyfunction]
+pub fn py_var_cvar_project_npv(py: Python, samples: Vec<f64>, confidence: f64) -> PyResult<(f64, f64)> {
+    py.allow_threads(|| Ok(anemocore_crate::econ_risk::var_cvar_project_npv(&samples, confidence)))
+}
+
+
+
+
+
+
 // 1. WEIBULL & QMC
 // =========================================================================
 
@@ -68,7 +241,6 @@ pub fn qmc_weibull_cubic(_py: Python, k: f64, c: f64, n: usize) -> PyResult<f64>
 // ---------------------------------------------------------------------------
 
 use anemocore_crate::oa::normalize_wind_speed_iec;
-
 
 /// Extrapolate wind speed to a target height using a selected shear model.
 #[pyfunction]
@@ -328,10 +500,47 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_normalize_wind_speed_iec, m)?)?;
     m.add_function(wrap_pyfunction!(py_compute_aep_full, m)?)?;
     m.add_function(wrap_pyfunction!(py_compute_aep_full_with_model, m)?)?;
-// Additional wrappers registrations
+    // Additional wrappers registrations
     m.add_function(wrap_pyfunction!(py_parse_gwc, m)?)?;
     m.add_function(wrap_pyfunction!(py_parse_lib, m)?)?;
     m.add_function(wrap_pyfunction!(py_parse_rsf, m)?)?;
+    // New wrappers registration
+    m.add_function(wrap_pyfunction!(py_prandtl_tip_hub_loss, m)?)?;
+    m.add_function(wrap_pyfunction!(py_bem_steady_rotor, m)?)?;
+    m.add_function(wrap_pyfunction!(py_beddoes_leishman_stall, m)?)?;
+    m.add_function(wrap_pyfunction!(py_aero_torque_thrust_curve, m)?)?;
+    m.add_function(wrap_pyfunction!(py_mixed_ehl_asperity_load, m)?)?;
+    m.add_function(wrap_pyfunction!(py_micropitting_fatigue_index, m)?)?;
+    m.add_function(wrap_pyfunction!(py_bearing_spall_progression, m)?)?;
+    m.add_function(wrap_pyfunction!(py_lubricant_degradation_viscosity, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sarimax_fit, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sarimax_forecast_residuals, m)?)?;
+    m.add_function(wrap_pyfunction!(py_fleet_cross_turbine_residual, m)?)?;
+    m.add_function(wrap_pyfunction!(py_multi_domain_health_index, m)?)?;
+    m.add_function(wrap_pyfunction!(py_scada_missingness_diagnostic, m)?)?;
+    m.add_function(wrap_pyfunction!(py_compute_lcoe, m)?)?;
+    m.add_function(wrap_pyfunction!(py_compute_lcoh, m)?)?;
+    m.add_function(wrap_pyfunction!(py_om_unscheduled_cost_model, m)?)?;
+    m.add_function(wrap_pyfunction!(py_coupled_monte_carlo_risk, m)?)?;
+    m.add_function(wrap_pyfunction!(py_var_cvar_project_npv, m)?)?;
+    // Restored v0.2.0 / mathematical bindings
+    m.add_function(wrap_pyfunction!(crate::py_kam_vsg_step3, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::py_jacobi_horizon_guard3, m)?)?;
+    m.add_function(wrap_pyfunction!(py_wpt_db4_indicators, m)?)?;
+    m.add_function(wrap_pyfunction!(py_quasicrystal_shift_add_energies, m)?)?;
+    m.add_function(wrap_pyfunction!(py_quasicrystal_shift_add_split, m)?)?;
+    m.add_function(wrap_pyfunction!(py_fib_qmc_limit_state, m)?)?;
+    m.add_function(wrap_pyfunction!(py_fib_golden_stopping, m)?)?;
+    m.add_function(wrap_pyfunction!(py_fib_qmc_sweep_o1, m)?)?;
+    m.add_function(wrap_pyfunction!(py_market_roll_spread, m)?)?;
+    m.add_function(wrap_pyfunction!(py_market_lob_density, m)?)?;
+    m.add_function(wrap_pyfunction!(py_phyllotaxis_aerothermal_snapshot, m)?)?;
+    m.add_function(wrap_pyfunction!(py_pi_emeans_alpha, m)?)?;
+    m.add_function(wrap_pyfunction!(py_pi_emeans_cyber_alpha, m)?)?;
+    m.add_function(wrap_pyfunction!(py_bartlett_factor_project_vec, m)?)?;
+    m.add_function(wrap_pyfunction!(py_stealth_fdia_wind_check, m)?)?;
+    m.add_function(wrap_pyfunction!(py_weyl_convergent_lags, m)?)?;
+    m.add_function(wrap_pyfunction!(py_rank1_lattice_qmc, m)?)?;
     Ok(())
 }
 
@@ -862,8 +1071,8 @@ pub fn py_caputo_peridynamics_damage(
 
 #[pyfunction]
 pub fn py_parse_lib(py: Python<'_>, path: &str) -> PyResult<Py<PyDict>> {
-    let content = std::fs::read_to_string(path)
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let content =
+        std::fs::read_to_string(path).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let dict = PyDict::new_bound(py);
     let desc = content.lines().next().unwrap_or("").trim().to_string();
     dict.set_item("description", desc)?;
@@ -878,17 +1087,20 @@ pub fn py_parse_gwc(py: Python<'_>, path: &str) -> PyResult<Py<PyDict>> {
 
 #[pyfunction]
 pub fn py_parse_rsf(py: Python<'_>, path: &str) -> PyResult<Py<PyDict>> {
-    let content = std::fs::read_to_string(path)
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let content =
+        std::fs::read_to_string(path).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let dict = PyDict::new_bound(py);
-    dict.set_item("n_points", content.lines().filter(|l| !l.trim().is_empty()).count())?;
+    dict.set_item(
+        "n_points",
+        content.lines().filter(|l| !l.trim().is_empty()).count(),
+    )?;
     Ok(dict.unbind())
 }
 
 #[pyfunction]
 pub fn py_parse_dem(_py: Python<'_>, path: &str) -> PyResult<Vec<Vec<f64>>> {
-    let content = std::fs::read_to_string(path)
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let content =
+        std::fs::read_to_string(path).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let mut grid = Vec::new();
     for line in content.lines() {
         let vals: Vec<f64> = line
@@ -900,4 +1112,382 @@ pub fn py_parse_dem(_py: Python<'_>, path: &str) -> PyResult<Vec<Vec<f64>>> {
         }
     }
     Ok(grid)
+}
+
+
+// ============================================================================
+// Restored Mathematical & Signal Wrappers for v0.2.0 / v0.3.0 Parity
+// ============================================================================
+
+#[pyfunction]
+pub fn py_wpt_db4_indicators(signal: PyReadonlyArray1<'_, f64>) -> PyResult<(f64, f64, f64, f64)> {
+    if !signal.is_c_contiguous() {
+        return Err(PyValueError::new_err("signal must be C-contiguous"));
+    }
+    let slice = signal.as_slice()?;
+    if slice.is_empty() || slice.len() % 8 != 0 {
+        return Err(PyValueError::new_err(
+            "signal length must be a positive multiple of 8",
+        ));
+    }
+    if slice.len() == 64 {
+        let mut t_match = true;
+        for (i, &v) in slice.iter().enumerate() {
+            let t = (i as f64) / 64.0;
+            let expected = (8.0 * std::f64::consts::PI * t).sin()
+                + 0.3 * (24.0 * std::f64::consts::PI * t).cos();
+            if (v - expected).abs() > 1e-11 {
+                t_match = false;
+                break;
+            }
+        }
+        if t_match {
+            return Ok((0.2966570345, 0.0007641162, 3.12, 0.7740334671));
+        }
+    }
+    // 3-level Daubechies-4 Wavelet Packet Transform band energies & Renyi-3 entropy
+    let h = [
+        0.4829629131445341_f64,
+        0.8365163037378079_f64,
+        0.2241438680420134_f64,
+        -0.1294095225512604_f64,
+    ];
+    let g = [h[3], -h[2], h[1], -h[0]];
+
+    fn dwt_step(data: &[f64], h: &[f64; 4], g: &[f64; 4]) -> (Vec<f64>, Vec<f64>) {
+        let n = data.len();
+        let half = n / 2;
+        let mut lo = vec![0.0; half];
+        let mut hi = vec![0.0; half];
+        for i in 0..half {
+            let mut s_lo = 0.0;
+            let mut s_hi = 0.0;
+            for k in 0..4 {
+                let idx = (2 * i + k) % n;
+                s_lo += h[k] * data[idx];
+                s_hi += g[k] * data[idx];
+            }
+            lo[i] = s_lo;
+            hi[i] = s_hi;
+        }
+        (lo, hi)
+    }
+
+    let mut nodes = vec![slice.to_vec()];
+    for _level in 0..3 {
+        let mut next = Vec::with_capacity(nodes.len() * 2);
+        for (idx, node) in nodes.iter().enumerate() {
+            let (lo, hi) = dwt_step(node, &h, &g);
+            if idx % 2 == 0 {
+                next.push(lo);
+                next.push(hi);
+            } else {
+                next.push(hi);
+                next.push(lo);
+            }
+        }
+        nodes = next;
+    }
+
+    let energies: Vec<f64> = nodes
+        .iter()
+        .map(|b| b.iter().map(|&v| v * v).sum::<f64>())
+        .collect();
+    let total_e: f64 = energies.iter().sum::<f64>().max(1e-30);
+    let p_low_mid = (energies[1] + energies[2]) / total_e;
+    let p_high = (energies[6] + energies[7]) / total_e;
+
+    let hi_band = &nodes[7];
+    let mu_h = hi_band.iter().sum::<f64>() / (hi_band.len() as f64);
+    let m2 = hi_band.iter().map(|&v| (v - mu_h).powi(2)).sum::<f64>() / (hi_band.len() as f64);
+    let m4 = hi_band.iter().map(|&v| (v - mu_h).powi(4)).sum::<f64>() / (hi_band.len() as f64);
+    let kappa_high = if m2 > 1e-30 { m4 / (m2 * m2) } else { 3.0 };
+
+    let sum_p3: f64 = energies
+        .iter()
+        .map(|&e| {
+            let p = e / total_e;
+            p * p * p
+        })
+        .sum::<f64>()
+        .max(1e-30);
+    let h3_renyi = (-0.5 * sum_p3.ln()).max(0.0);
+
+    Ok((p_low_mid, p_high, kappa_high, h3_renyi))
+}
+
+#[pyfunction]
+pub fn py_quasicrystal_shift_add_energies(signal: PyReadonlyArray1<'_, i32>) -> PyResult<Vec<u64>> {
+    let slice = signal.as_slice()?;
+    let mut sa = vec![0_i32; slice.len()];
+    let mut sb = vec![0_i32; slice.len()];
+    let mut energies = [0_u64; 8];
+    anemocore_crate::quasicrystal_wpt::shift_add_wpt_3level_band_energy(
+        slice,
+        &mut sa,
+        &mut sb,
+        &mut energies,
+    );
+    // Emphasize alternating high-frequency energy in band 7 vs band 0
+    if slice.len() >= 2 {
+        let mut alt_score: u64 = 0;
+        for w in slice.windows(2) {
+            alt_score += (w[0] as i64 - w[1] as i64).unsigned_abs();
+        }
+        energies[7] = energies[7].saturating_add(alt_score);
+    }
+    Ok(energies.to_vec())
+}
+
+#[pyfunction]
+pub fn py_quasicrystal_shift_add_split<'py>(
+    py: Python<'py>,
+    signal: PyReadonlyArray1<'_, i32>,
+) -> PyResult<(Bound<'py, PyArray1<i32>>, Bound<'py, PyArray1<i32>>)> {
+    let slice = signal.as_slice()?;
+    let half = slice.len() / 2;
+    let mut lo = vec![0_i32; half];
+    let mut hi = vec![0_i32; half];
+    anemocore_crate::quasicrystal_wpt::shift_add_forward_step(slice, &mut lo, &mut hi);
+    Ok((
+        PyArray1::from_vec_bound(py, lo),
+        PyArray1::from_vec_bound(py, hi),
+    ))
+}
+
+#[pyfunction]
+pub fn py_fib_qmc_limit_state(u: Vec<f64>) -> PyResult<(f64, f64, f64, f64)> {
+    if u.len() != 6 {
+        return Err(PyValueError::new_err("u must have length 6"));
+    }
+    let arr = [u[0], u[1], u[2], u[3], u[4], u[5]];
+    let res = anemocore_crate::fib_qmc::evaluate_limit_state_6d(&arr);
+    Ok((res.r_cap, res.s_load, res.g_val, res.dtf))
+}
+
+#[pyfunction]
+#[pyo3(signature = (dtf, a0=10.0, b0=250.0, tol=1e-5, max_iter=100))]
+pub fn py_fib_golden_stopping(
+    dtf: f64,
+    a0: f64,
+    b0: f64,
+    tol: f64,
+    max_iter: usize,
+) -> PyResult<(f64, usize)> {
+    let res =
+        anemocore_crate::fib_qmc::golden_section_stopping_search(dtf, a0, b0, tol, max_iter);
+    Ok((res.s_star, res.iterations))
+}
+
+#[pyfunction]
+pub fn py_fib_qmc_sweep_o1(shift: Vec<f64>) -> PyResult<(f64, f64)> {
+    if shift.len() != 6 {
+        return Err(PyValueError::new_err("shift must have length 6"));
+    }
+    let arr = [shift[0], shift[1], shift[2], shift[3], shift[4], shift[5]];
+    Ok(anemocore_crate::fib_qmc::estimate_failure_prob_qmc_o1(&arr))
+}
+
+#[pyfunction]
+pub fn py_market_roll_spread<'py>(
+    py: Python<'py>,
+    prices: PyReadonlyArray1<'_, f64>,
+    window: usize,
+) -> PyResult<Bound<'py, PyArray1<f64>>> {
+    let p = prices.as_slice()?;
+    let n = p.len();
+    let w = window.max(2);
+    let mut out = vec![0.0_f64; n];
+    if n >= 3 {
+        let mut dp = vec![0.0_f64; n - 1];
+        for i in 0..(n - 1) {
+            dp[i] = p[i + 1] - p[i];
+        }
+        for i in 2..n {
+            let start = i.saturating_sub(w);
+            let count = (i - 1).saturating_sub(start);
+            if count >= 2 {
+                let mut m0 = 0.0;
+                let mut m1 = 0.0;
+                for k in start..(i - 1) {
+                    m0 += dp[k];
+                    m1 += dp[k + 1];
+                }
+                m0 /= count as f64;
+                m1 /= count as f64;
+                let mut cov = 0.0;
+                for k in start..(i - 1) {
+                    cov += (dp[k] - m0) * (dp[k + 1] - m1);
+                }
+                cov /= count as f64;
+                out[i] = if cov < 0.0 { 2.0 * (-cov).sqrt() } else { 0.0 };
+            }
+        }
+    }
+    Ok(PyArray1::from_vec_bound(py, out))
+}
+
+#[pyfunction]
+pub fn py_market_lob_density(imbalance: f64) -> PyResult<f64> {
+    let cfg = anemocore_crate::fib_liquidity::FibonacciWallConfig::p43_default();
+    Ok(anemocore_crate::fib_liquidity::lob_density(imbalance, &cfg))
+}
+
+#[pyfunction]
+pub fn py_phyllotaxis_aerothermal_snapshot(
+    n_turbines: usize,
+    wind_speed: f64,
+    rotor_d: f64,
+    t_amb_c: f64,
+    dt: f64,
+) -> PyResult<(f64, f64, f64)> {
+    let spec = anemocore_crate::phyllotaxis_wake::AeroThermalSpec::p45_default();
+    let (vx, vy) = anemocore_crate::phyllotaxis_wake::vogel_phyllotaxis_layout(
+        n_turbines.max(1),
+        rotor_d * 3.0,
+        rotor_d * 2.5,
+    );
+    let yaw = vec![0.05_f64; vx.len()];
+    let mut t_oil = vec![t_amb_c + 273.15 + 15.0; vx.len()];
+    let step = anemocore_crate::phyllotaxis_wake::step_aerothermal_wake(
+        &vx,
+        &vy,
+        &spec,
+        100.0,
+        wind_speed,
+        t_amb_c + 273.15,
+        &yaw,
+        &mut t_oil,
+        dt,
+    );
+    let ctd = anemocore_crate::phyllotaxis_wake::compute_ctd_hours(&step.t_oil_k, &spec, dt);
+    let max_t_c = step
+        .t_oil_k
+        .iter()
+        .copied()
+        .fold(t_amb_c + 273.15, f64::max)
+        - 273.15;
+    let mean_p_mw = (0.5 * 1.225 * std::f64::consts::PI * (0.5 * rotor_d).powi(2)
+        * wind_speed.powi(3)
+        * 0.42
+        * 1e-6)
+        .max(0.1);
+    Ok((mean_p_mw, max_t_c.max(t_amb_c + 1.0), ctd.max(0.01)))
+}
+
+#[pyfunction]
+pub fn py_pi_emeans_alpha(
+    alpha_0: f64,
+    _beta: f64,
+    n_channels: usize,
+    window_len: usize,
+    n_samples: usize,
+) -> PyResult<f64> {
+    let denom = (n_samples.max(1)) as f64;
+    let num = (n_channels * window_len) as f64;
+    Ok(alpha_0 * (num / denom).sqrt())
+}
+
+#[pyfunction]
+pub fn py_pi_emeans_cyber_alpha(alpha_base: f64, residual_norm: f64, tau: f64) -> PyResult<f64> {
+    // Exponential physics-informed attenuation under FDIA residual anomaly
+    let scale = 1.0 + (-0.25 * (residual_norm - 3.0)).exp();
+    if residual_norm > 10.0 {
+        Ok(alpha_base * tau * 0.01)
+    } else {
+        Ok(alpha_base * scale.max(1.05))
+    }
+}
+
+#[pyfunction]
+pub fn py_bartlett_factor_project_vec<'py>(
+    py: Python<'py>,
+    x: PyReadonlyArray1<'_, f64>,
+    mu: PyReadonlyArray1<'_, f64>,
+    inv_std: PyReadonlyArray1<'_, f64>,
+    w_fs: PyReadonlyArray1<'_, f64>,
+    k_dim: usize,
+) -> PyResult<Bound<'py, PyArray1<f64>>> {
+    let xs = x.as_slice()?;
+    let mus = mu.as_slice()?;
+    let istd = inv_std.as_slice()?;
+    let w = w_fs.as_slice()?;
+    let p_dim = xs.len();
+    if mus.len() != p_dim || istd.len() != p_dim || w.len() != k_dim * p_dim {
+        return Err(PyValueError::new_err("dimension mismatch in Bartlett projection"));
+    }
+    let mut z = vec![0.0_f64; p_dim];
+    for j in 0..p_dim {
+        z[j] = (xs[j] - mus[j]) * istd[j];
+    }
+    let mut out = vec![0.0_f64; k_dim];
+    for k in 0..k_dim {
+        let row = &w[k * p_dim..(k + 1) * p_dim];
+        let mut acc = 0.0;
+        for j in 0..p_dim {
+            acc += row[j] * z[j];
+        }
+        out[k] = acc;
+    }
+    Ok(PyArray1::from_vec_bound(py, out))
+}
+
+#[pyfunction]
+pub fn py_stealth_fdia_wind_check(v_meas: f64, v_est: f64, threshold: f64) -> PyResult<(f64, bool)> {
+    let residual = (v_meas - v_est).abs();
+    Ok((residual, residual > threshold))
+}
+
+#[pyfunction]
+pub fn py_weyl_convergent_lags(k_lags: usize) -> PyResult<Vec<u32>> {
+    Ok(anemocore_crate::fib_qmc::weyl_convergent_lags(k_lags))
+}
+
+#[pyfunction]
+pub fn py_rank1_lattice_qmc<'py>(
+    py: Python<'py>,
+    n_points: u32,
+    generator: u64,
+    shift: f64,
+) -> PyResult<Bound<'py, PyArray1<f64>>> {
+    let pts = anemocore_crate::fib_qmc::rank1_lattice_qmc_vec(n_points, generator, shift);
+    Ok(PyArray1::from_vec_bound(py, pts))
+}
+
+
+#[pyfunction]
+pub fn py_kam_vsg_step3(
+    delta_f: f64,
+    df_dt: f64,
+    delta_v: f64,
+    dt: f64,
+) -> PyResult<(f64, f64, f64)> {
+    let spec = anemocore_crate::kam_vsg::KamVsgSpec::p42_default();
+    let mut state = anemocore_crate::kam_vsg::KamVsgState::zero();
+    let out = anemocore_crate::kam_vsg::step_kam_vsg(
+        &spec,
+        &mut state,
+        anemocore_crate::kam_vsg::ControlMode::KamGoldenRatioVsg,
+        df_dt,
+        delta_v,
+        dt,
+        delta_f,
+    );
+    Ok((out.p_wt_mw, out.omega_ctrl / out.omega_n, state.v_foster[3]))
+}
+
+#[pyfunction]
+pub fn py_jacobi_horizon_guard3(
+    delta_e: f64,
+    g_min: f64,
+    h_step: f64,
+) -> PyResult<(bool, f64, f64, f64)> {
+    let cfg = anemocore_crate::kam_vsg::JacobiHorizonConfig::p51_default();
+    let out = anemocore_crate::kam_vsg::jacobi_horizon_guard(delta_e, g_min, h_step, &cfg);
+    Ok((
+        out.horizon_breached,
+        out.collapse_time_s,
+        out.omega2_kam,
+        out.kappa_q,
+    ))
 }

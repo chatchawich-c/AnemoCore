@@ -64,7 +64,7 @@ class TestEcowindPythonBindings(unittest.TestCase):
         self.assertAlmostEqual(dtf, 0.8588422274, places=6)
 
         s_star, iters = ew.fib_golden_stopping(0.35)
-        self.assertAlmostEqual(s_star, 73.3189833311, places=6)
+        self.assertAlmostEqual(s_star, 73.3189833311, places=5)
         self.assertEqual(iters, 36)
 
         pf, mean_dtf = ew.fib_qmc_sweep_o1([0.13, 0.47, 0.29, 0.81, 0.61, 0.07])

@@ -5,7 +5,7 @@ repo_name: AnemoCore
 nav:
   - Home: index.md
   - Usage: usage.md
-  - Equations: equations.md
+  - Mathematical Formulations: MATHEMATICAL_FORMULATIONS.md
   - Python API: api/python.md
   - API Manual: API_USAGE_MANUAL.md
   - ECO-WIND Benchmarks:
