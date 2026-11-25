@@ -1,6 +1,6 @@
-# AnemoCore v0.3.0 — API & Function Reference Manual
+# AnemoCore v0.3.2 — API & Function Reference Manual
 
-> **Release:** `v0.3.0` | **Rust Crate:** `anemocore` (`anemocore_crate`) | **Python Package:** `anemocore` (`PyO3` / `cp39-abi3`) | **R Package:** `anemocorer` (`extendr`)
+> **Release:** `v0.3.2` | **Rust Crate:** `anemocore` (`anemocore_crate`) | **Python Package:** `anemocore` (`PyO3` / `cp39-abi3`) | **R Package:** `anemocorer` (`extendr`)
 
 ---
 
@@ -212,3 +212,9 @@ for _ in 0..1000 {
    When passing a NumPy slice (e.g., `x[::2]`) or a DataFrame column, first call `np.ascontiguousarray(x, dtype=np.float64)` (or `np.int32` for Shift‑Add functions) before invoking the Rust binding.
 4. **Temperature units mismatch between `phyllotaxis_wake` and `kam_vsg`:**
    `kam_vsg` uses **Celsius (°C)** for `t_coolant_c` / `t_junction_c`. `phyllotaxis_wake` uses **Kelvin (K)** for `t_amb_k`, `t_oil_k_state`, and `compute_ctd_hours`. Convert accordingly (`K = °C + 273.15`).
+
+## 13. `heat_diffusion` & `lubricant` (`v0.3.2`)
+
+- **Graph Laplacian heat diffusion:** `py_heat_diffuse(values, adjacency, dt, steps)` in Python and `r_heat_diffuse(values, adjacency, dt, steps)` in R wrap `anemocore::heat_diffusion::heat_diffuse`.
+- **Arrhenius lubricant life:** `py_arrhenius_oil_life(temp_c, ref_temp_c, ref_life_h, activation_energy_j_mol)` in Python and `r_arrhenius_oil_life(...)` in R wrap `LubricantModel::arrhenius_oil_life` (`anemocore::lubricant::lubricant::arrhenius_oil_life`).
+- **ZDDP additive depletion:** `py_zddp_depletion(initial_ppm, temp_c, time_h, k_ref, activation_energy_j_mol)` in Python and `r_zddp_depletion(...)` in R wrap `LubricantModel::zddp_depletion` (`anemocore::lubricant::lubricant::zddp_depletion`).

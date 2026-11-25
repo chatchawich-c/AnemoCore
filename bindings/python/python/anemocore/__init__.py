@@ -112,6 +112,9 @@ def __getattr__(name: str):
 
 
 __all__ = [
+    "py_zddp_depletion",
+    "py_arrhenius_oil_life",
+    "py_heat_diffuse",
     "PHI",
     "PHI_INV",
     "FRAME_BOUND_A",

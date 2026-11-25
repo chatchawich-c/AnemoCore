@@ -261,3 +261,9 @@ anemocore_iso16281_tilt_factor <- function(theta_tilt_rad, roller_length_m, radi
 anemocore_caputo_peridynamics <- function(stretch_history, dt_sec, alpha, critical_stretch_s0) {
   .Call(wrap__anemocore_caputo_peridynamics, stretch_history, dt_sec, alpha, critical_stretch_s0)
 }
+
+r_heat_diffuse <- function(values, adjacency, dt, steps) .Call(wrap__r_heat_diffuse, values, adjacency, dt, steps)
+
+r_arrhenius_oil_life <- function(temp_c, ref_temp_c, ref_life_h, activation_energy_j_mol) .Call(wrap__r_arrhenius_oil_life, temp_c, ref_temp_c, ref_life_h, activation_energy_j_mol)
+
+r_zddp_depletion <- function(initial_ppm, temp_c, time_h, k_ref, activation_energy_j_mol) .Call(wrap__r_zddp_depletion, initial_ppm, temp_c, time_h, k_ref, activation_energy_j_mol)

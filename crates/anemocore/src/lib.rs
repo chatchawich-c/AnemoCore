@@ -63,3 +63,5 @@ pub mod tribology;
 pub mod wake;
 #[cfg(feature = "std")]
 pub mod wra;
+pub mod heat_diffusion;
+pub mod lubricant;
