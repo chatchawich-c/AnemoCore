@@ -1,11 +1,7 @@
-cd /Users/chatchawichchaihong/Documents/AnemoCore && \
-python3 - <<'PY'
-import pathlib
-
-content = """site_name: "AnemoCore Documentation"
-site_url: "https://chatchawich-c.github.io/AnemoCore"
-repo_url: "https://github.com/chatchawich-c/AnemoCore"
-repo_name: "AnemoCore"
+site_name: AnemoCore Documentation
+site_url: https://chatchawich-c.github.io/AnemoCore
+repo_url: https://github.com/chatchawich-c/AnemoCore
+repo_name: AnemoCore
 nav:
   - Home: index.md
   - Usage: usage.md
@@ -53,16 +49,3 @@ markdown_extensions:
 extra_javascript:
   - javascripts/mathjax.js
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
-"""
-
-pathlib.Path("mkdocs.yml").write_text(content, encoding="utf-8")
-try:
-    import yaml
-    yaml.safe_load(content)
-    print("YAML OK")
-except ImportError:
-    print("Written (PyYAML not installed locally)")
-PY
-git add mkdocs.yml && \
-git commit -m "docs: rewrite valid mkdocs.yml" && \
-git push origin main
