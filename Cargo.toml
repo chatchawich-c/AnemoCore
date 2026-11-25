@@ -11,7 +11,7 @@ exclude = [
 default-members = ["crates/anemocore"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Chatchawich Chaihong <6610130021@email.psu.ac.th>"]
@@ -21,10 +21,10 @@ categories = ["science", "embedded", "mathematics", "simulation"]
 
 [workspace.dependencies]
 libm = "0.2"
-heapless = "0.8"
+
 microfft = "0.6"
 rayon = "1.10"
-faer = { version = "0.20", default-features = false, features = ["std", "rayon"] }
+
 rustfft = "6.2"
 
 [profile.release]

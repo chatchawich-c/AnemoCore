@@ -13,7 +13,8 @@
 #![allow(
     unused_imports,
     clippy::excessive_precision,
-    clippy::doc_lazy_continuation
+    clippy::doc_lazy_continuation,
+    clippy::needless_range_loop
 )]
 use core::f64::consts::PI;
 use libm::{exp, fabs, log, pow, sin, sqrt};

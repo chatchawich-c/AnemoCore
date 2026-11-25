@@ -68,7 +68,7 @@ fn round1_wave1_end_to_end_pipeline_parity() {
     // 5. P43 + P08: Fibonacci LOB wall density + Roll spread
     let lob_cfg = FibonacciWallConfig::p43_default();
     assert!(lob_density(0.618, &lob_cfg) > lob_density(0.125, &lob_cfg));
-    let spread = roll_effective_spread(&[62.0, 65.0, 61.0, 66.0, 60.0, 67.0, 59.0, 68.0], 8);
+    let spread = roll_effective_spread(&[62.0, 65.0, 61.0, 66.0, 60.0, 67.0, 59.0, 68.0], 8.0);
     assert!(spread[7] > 0.0);
 
     // 6. P45: Phyllotaxis layout + Structure Factor + Aero-Thermal Wake + Golden Yaw + CTD

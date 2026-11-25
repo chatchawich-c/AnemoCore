@@ -11,19 +11,17 @@
 //! or MIT license (`LICENSE-MIT`) at your option.
 
 pub mod edge_governor;
+pub mod fib_liquidity;
 pub mod fib_qmc;
 pub mod kam_vsg;
 pub mod math_no_std;
+pub mod phyllotaxis_wake;
 pub mod pi_emeans;
 pub mod quasicrystal_wpt;
+pub mod reg_econ;
 pub mod signal_wpt;
 pub mod topology_braids;
 pub mod weibull_est;
-
-#[cfg(feature = "std")]
-pub mod fib_liquidity;
-#[cfg(feature = "std")]
-pub mod phyllotaxis_wake;
 
 /// Golden ratio constant phi = (1 + sqrt(5)) / 2.
 #[allow(clippy::approx_constant, clippy::excessive_precision)]
@@ -39,4 +37,9 @@ pub const PHI_INV2: f64 = 0.38196601125010515;
 pub const GOLDEN_ANGLE_RAD: f64 = 2.3999632297286533;
 
 pub mod microsite;
+pub mod oa;
+pub mod thermo;
 pub mod transforms;
+pub mod tribology;
+pub mod wake;
+pub mod wra;

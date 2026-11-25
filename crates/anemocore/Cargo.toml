@@ -14,18 +14,20 @@ description = "Pure-Rust (#![no_std] compatible) mathematical kernels for wind r
 default = ["std"]
 std = [
     "dep:rayon",
-    "dep:faer",
     "dep:rustfft",
+    "dep:serde",
+    "dep:serde_json",
 ]
 # Optional integration with SEMFlow (sharing faer = "0.20")
 sem = ["std"]
 
 [dependencies]
 libm = { workspace = true }
-heapless = { workspace = true }
+
 microfft = { workspace = true }
 rayon = { workspace = true, optional = true }
-faer = { workspace = true, optional = true }
-rustfft = { workspace = true, optional = true }
 
+rustfft = { workspace = true, optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+serde_json = { version = "1.0", optional = true }
 [dev-dependencies]

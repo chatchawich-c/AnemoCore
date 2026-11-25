@@ -1,72 +1,126 @@
-//! `#![no_std]` Geometric Stability, Jacobi Horizon Guard, Symplectic Solvers, and Braid Bounds.
-//!
-//! Supports **Paper 51** (*Null-Geodesic Control & KAM Diophantine Curvature Stabilization*)
-//! along with [`crate::kam_vsg::jacobi_horizon_guard`] for `< 10 µs` WCET execution on ARM Cortex-M4F.
+// SPDX-License-Identifier: MIT OR Apache-2.0
+// Grant No. ERASMUS-EDU-2025-CBHE-101177220
 
-pub use crate::kam_vsg::{jacobi_horizon_guard, JacobiGuardOutput, JacobiHorizonConfig};
-use libm::fabs;
-
-/// Structure-preserving 1-DOF Symplectic Störmer–Verlet step `[P51 Eqs. 16-18]`
-/// preserving canonical phase-space area in `#![no_std]` fixed stack memory.
-#[inline]
-pub fn symplectic_stormer_verlet_step(
-    q: f64,
-    p: f64,
-    g_inv: f64,
-    grad_v_q: f64,
-    grad_v_q_next: f64,
-    dt: f64,
-) -> (f64, f64) {
-    let p_half = p - 0.5 * dt * grad_v_q;
-    let q_next = q + dt * g_inv * p_half;
-    let p_next = p_half - 0.5 * dt * grad_v_q_next;
-    (q_next, p_next)
+/// Simple representation of a braid word using generator indices.
+/// For n strands, generators are 1..(n-1). Positive integer = sigma_i, negative = sigma_i^{-1}.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BraidWord<const N: usize> {
+    /// Fixed‑size array storing generator indices.
+    generators: [i8; N],
+    /// Number of valid entries in `generators`.
+    len: usize,
 }
 
-/// Evaluates minimum Diophantine small divisor `inf |k1 + k2 * omega_ratio|` up to `k_max`
-/// verifying Hurwitz's lower bound `gamma_max / k = 1 / (sqrt(5) * k)` at `omega_ratio = phi^-1`.
-pub fn min_diophantine_small_divisor(k_max: i32, omega_ratio: f64) -> f64 {
-    let mut min_div = f64::MAX;
-    for k2 in 1..=k_max {
-        for k1 in -k_max..=k_max {
-            let val = fabs((k1 as f64) + (k2 as f64) * omega_ratio);
-            if val < min_div {
-                min_div = val;
+/// Custom error type for braid operations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BraidError {
+    Full,
+}
+
+impl<const N: usize> Default for BraidWord<N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<const N: usize> BraidWord<N> {
+    /// Create an empty braid word.
+    pub const fn new() -> Self {
+        Self {
+            generators: [0; N],
+            len: 0,
+        }
+    }
+
+    /// Append a generator to the word. Returns `Ok(())` or `Err(BraidError::Full)` if full.
+    pub fn push(&mut self, gen: i8) -> Result<(), BraidError> {
+        if self.len < N {
+            self.generators[self.len] = gen;
+            self.len += 1;
+            Ok(())
+        } else {
+            Err(BraidError::Full)
+        }
+    }
+
+    /// Reduce the word by cancelling adjacent inverse pairs and applying far‑commutativity.
+    pub fn reduce(&mut self) {
+        // Cancellation pass.
+        let mut i = 0usize;
+        while i + 1 < self.len {
+            if self.generators[i] == -self.generators[i + 1] {
+                // Remove both entries by shifting left.
+                for j in i..self.len - 2 {
+                    self.generators[j] = self.generators[j + 2];
+                }
+                self.len -= 2;
+                i = i.saturating_sub(1);
+            } else {
+                i += 1;
+            }
+        }
+        // Far‑commutativity: sort by absolute value (simple bubble sort).
+        let mut swapped = true;
+        while swapped {
+            swapped = false;
+            for j in 0..self.len.saturating_sub(1) {
+                if (self.generators[j] as i16).abs() > (self.generators[j + 1] as i16).abs() {
+                    self.generators.swap(j, j + 1);
+                    swapped = true;
+                }
             }
         }
     }
-    min_div
+
+    /// Compute a placeholder reduced Burau matrix trace invariant.
+    /// Returns the sum of absolute generator indices.
+    pub fn burau_trace(&self) -> i32 {
+        self.generators[..self.len]
+            .iter()
+            .map(|&g| (g as i32).abs())
+            .sum()
+    }
+
+    /// Access the current slice of generators.
+    pub fn as_slice(&self) -> &[i8] {
+        &self.generators[..self.len]
+    }
+}
+
+/// Discrete vortex helicity for a set of velocity (`u`) and vorticity (`ω`) samples.
+/// `volumes` supplies the cell volumes ΔV.
+pub fn vortex_helicity(u: &[f64], ω: &[f64], volumes: &[f64]) -> f64 {
+    let n = u.len().min(ω.len()).min(volumes.len());
+    let mut h = 0.0;
+    for i in 0..n {
+        h += u[i] * ω[i] * volumes[i];
+    }
+    h
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::PHI_INV;
-    use libm::sqrt;
 
     #[test]
-    fn p51_golden_ratio_beats_hurwitz_bound() {
-        let k_max = 20;
-        let div_phi = min_diophantine_small_divisor(k_max, PHI_INV);
-        let hurwitz_lower = 1.0 / (sqrt(5.0) * (k_max as f64));
-        // Golden ratio achieves strong separation vs resonant rational 2/3 (= 0)
-        assert!(div_phi >= 0.9 * hurwitz_lower, "div_phi={div_phi}");
-        let div_rational = min_diophantine_small_divisor(k_max, 2.0 / 3.0);
-        assert!(div_rational < 1e-12);
+    fn braid_reduce_and_trace() {
+        let mut w: BraidWord<64> = BraidWord::new();
+        w.push(1).unwrap();
+        w.push(-1).unwrap(); // cancels
+        w.push(2).unwrap();
+        w.push(1).unwrap();
+        w.push(3).unwrap();
+        w.reduce();
+        assert_eq!(w.as_slice(), &[1, 2, 3]);
+        assert_eq!(w.burau_trace(), 6);
     }
 
     #[test]
-    fn p51_symplectic_step_preserves_harmonic_energy() {
-        // Simple harmonic oscillator: V(q) = 0.5 * q^2 -> grad_V = q, g_inv = 1.0
-        let (mut q, mut p) = (1.0_f64, 0.0_f64);
-        let dt = 0.01;
-        for _ in 0..1000 {
-            let q_next_est = q + dt * (p - 0.5 * dt * q);
-            let (qn, pn) = symplectic_stormer_verlet_step(q, p, 1.0, q, q_next_est, dt);
-            q = qn;
-            p = pn;
-        }
-        let h_final = 0.5 * (q * q + p * p);
-        assert!(fabs(h_final - 0.5) < 1e-4, "h_final={h_final}");
+    fn helicity_compute() {
+        let u = [1.0, 2.0, 3.0];
+        let ω = [0.5, 0.5, 0.5];
+        let v = [1.0, 1.0, 1.0];
+        let h = vortex_helicity(&u, &ω, &v);
+        assert!((h - 3.0).abs() < 1e-12);
     }
 }

@@ -1,6 +1,6 @@
 Package: anemocore
 Title: Multi-Scale Physics-Informed Wind Turbine Prognostics and Control Engine
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: person(
     given = "Chatchawich",
     family = "Chaihong",
@@ -12,6 +12,7 @@ Description: R bindings powered by extendr to the pure-Rust ecowind-core library
     for wind turbine drivetrain prognostics, wavelet packet entropy, market
     microstructure liquidity, and aero-thermal wake modeling across ECO-WIND.
 License: MIT + file LICENSE
-Encoding: UTF-8
+URL: https://github.com/chatchawichchaihong/AnemoCore
+BugReports: https://github.com/chatchawichchaihong/AnemoCore/issues
 NeedsCompilation: yes
 Comment: Grant No. ERASMUS-EDU-2025-CBHE-101177220 (EU Erasmus+ CBHE ECO-WIND)

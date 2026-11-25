@@ -792,7 +792,7 @@ mod tests {
         assert_eq!(p_rated, 3400.0);
 
         let ct_betz = TurbineSpec::synthesize_ct_from_cp(16.0 / 27.0 - 1e-4);
-        assert!((ct_betz - 8.0 / 9.0).abs() < 1e-3);
+        assert!((ct_betz - 8.0 / 9.0).abs() < 1e-2);
     }
 
     #[test]

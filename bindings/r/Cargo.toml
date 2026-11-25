@@ -1,17 +1,17 @@
 [package]
 name = "anemocore"
 
-version.workspace = true
-edition.workspace = true
-license.workspace = true
-authors.workspace = true
-description = "R extendr bindings for ecowind-core."
+version = "0.2.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Chatchawich Chaihong <6610130021@email.psu.ac.th>"]
+description = "R extendr bindings for anemocore."
 
 [lib]
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]
-ecowind-core = { path = "../../crates/anemocore" }
+anemocore = { path = "../../crates/anemocore", package = "anemocore", features = ["std"] }
 extendr-api = "0.7"
 
 

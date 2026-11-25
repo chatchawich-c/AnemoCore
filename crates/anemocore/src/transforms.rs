@@ -1,4 +1,5 @@
 #![allow(
+    unused_imports,
     clippy::needless_range_loop,
     clippy::manual_is_multiple_of,
     clippy::manual_div_ceil
@@ -136,14 +137,14 @@ pub fn inv_laplace_stehfest<F: Fn(f64) -> f64>(t: f64, f_laplace: F) -> f64 {
     const V10: [f64; 10] = [
         0.08333333333333333,
         -32.083333333333336,
-        1338.3333333333333,
-        -18287.5,
-        97984.0,
-        -263914.0,
-        403816.6666666667,
-        -354181.25,
-        163911.66666666666,
-        -32_782.333_333_333_33,
+        1279.0,
+        -15623.666666666666,
+        84244.16666666666,
+        -236957.5,
+        375911.6666666667,
+        -340071.6666666667,
+        164062.5,
+        -32812.5,
     ];
     let a = LN2 / t;
     let mut sum = 0.0;
@@ -155,6 +156,7 @@ pub fn inv_laplace_stehfest<F: Fn(f64) -> f64>(t: f64, f_laplace: F) -> f64 {
 }
 
 /// Fixed Talbot numerical Inverse Laplace transform with M integration steps.
+/// Implements the Abate & Valko (2004) parabolic contour.
 /// F(s) accepts complex s = (re, im) and returns complex (re, im).
 pub fn inv_laplace_talbot<F: Fn(f64, f64) -> (f64, f64)>(
     t: f64,
@@ -179,25 +181,26 @@ pub fn inv_laplace_talbot<F: Fn(f64, f64) -> (f64, f64)>(
         let s_re = r * theta * cot_th;
         let s_im = r * theta;
 
-        // sigma = theta + (theta * cot - 1) * cot
-        let ds_dtheta_re = r * (cot_th - theta / (sin(theta) * sin(theta)));
-        let ds_dtheta_im = r;
+        // sigma(theta) = theta + (theta*cot(theta) - 1)*cot(theta)
+        // factor = 1 + i * sigma(theta)
+        let sigma = theta + (theta * cot_th - 1.0) * cot_th;
 
         let (f_re, f_im) = f_laplace(s_re, s_im);
         let exp_st_re = exp(s_re * t) * cos(s_im * t);
         let exp_st_im = exp(s_re * t) * sin(s_im * t);
 
-        // Term: exp(s*t) * F(s) * ds/dtheta
+        // Term: exp(s*t) * F(s) * (1 + i * sigma)
         // 1. prod1 = exp(s*t) * F(s)
         let p1_re = exp_st_re * f_re - exp_st_im * f_im;
         let p1_im = exp_st_re * f_im + exp_st_im * f_re;
 
-        // 2. prod2 = prod1 * (ds_dtheta_re + i * ds_dtheta_im)
-        let term_re = p1_re * ds_dtheta_re - p1_im * ds_dtheta_im;
+        // 2. prod1 * (1 + i * sigma)
+        // real part = p1_re * 1 - p1_im * sigma
+        let term_re = p1_re - p1_im * sigma;
         sum += term_re;
     }
 
-    (2.0 / m) * sum
+    (r / m) * sum
 }
 
 /// Evaluates Horner polynomial for real or complex numbers.
