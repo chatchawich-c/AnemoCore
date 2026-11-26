@@ -296,6 +296,11 @@ extendr_module! {
     fn r_om_unscheduled_cost_model;
     fn r_coupled_monte_carlo_risk;
     fn r_var_cvar_project_npv;
+    fn r_wake_analytic_gradients;
+    fn r_estimate_bankable_aep_iec;
+    fn r_bearing_fault_frequencies;
+    fn r_causal_modwt_db4;
+    fn r_rl_derating_rollout;
 }
 
 
@@ -713,4 +718,32 @@ fn r_zddp_depletion(
         k_ref,
         activation_energy_j_mol,
     )
+}
+
+#[extendr]
+fn r_wake_analytic_gradients(c_t: f64, k_w: f64, d: f64, x: f64, y: f64, z: f64, gamma: f64) -> Vec<f64> {
+    let (a, b, c) = anemocore::wake::wake_analytic_gradients(c_t, k_w, d, x, y, z, gamma); vec![a, b, c]
+}
+#[extendr]
+fn r_estimate_bankable_aep_iec(aep_gross_mwh: f64, loss_fractions: Vec<f64>, uncertainty_components_pct: Vec<f64>, aep_actual_mwh: f64) -> Vec<f64> {
+    let act = if aep_actual_mwh.is_nan() || aep_actual_mwh <= 0.0 { None } else { Some(aep_actual_mwh) };
+    let r = anemocore::oa::estimate_bankable_aep_iec61400_15(aep_gross_mwh, &loss_fractions, &uncertainty_components_pct, act);
+    vec![r.aep_net_mwh, r.p50_mwh, r.p75_mwh, r.p90_mwh, r.p99_mwh, r.sigma_tot_pct, r.eya_gap_pct]
+}
+#[extendr]
+fn r_bearing_fault_frequencies(nb: i32, db_mm: f64, dc_mm: f64, theta_rad: f64, fr_hz: f64) -> Vec<f64> {
+    let n_balls = usize::try_from(nb).unwrap_or(0);
+    match anemocore::tribology::bearing_fault_frequencies(n_balls, db_mm, dc_mm, theta_rad, fr_hz) {
+        Ok(f) => vec![f.bpfo, f.bpfi, f.bsf, f.ftf, f.sanity_sum_error],
+        Err(_) => vec![f64::NAN; 5],
+    }
+}
+#[extendr]
+fn r_causal_modwt_db4(series: Vec<f64>, levels: i32) -> Vec<f64> {
+    anemocore::scada_fleet::causal_modwt_db4(&series, usize::try_from(levels).unwrap_or(3)).1
+}
+#[extendr]
+fn r_rl_derating_rollout(wind_speeds_ms: Vec<f64>, ambient_temps_c: Vec<f64>, actions: Vec<f64>, dt_s: f64) -> Vec<f64> {
+    let (rew, en, ctd, v) = anemocore::rl_derating::evaluate_rl_derating_rollout(&anemocore::rl_derating::RlDeratingConfig::default(), &wind_speeds_ms, &ambient_temps_c, &actions, dt_s);
+    vec![rew, en, ctd, v as f64]
 }

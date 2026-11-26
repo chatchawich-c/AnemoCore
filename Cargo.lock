@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "anemocore"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "libm",
  "microfft",
@@ -16,7 +16,7 @@ dependencies = [
 
 [[package]]
 name = "anemocore-py"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "anemocore",
  "num-traits",

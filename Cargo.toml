@@ -11,7 +11,7 @@ exclude = [
 default-members = ["crates/anemocore"]
 
 [workspace.package]
-version = "0.3.3"
+version = "0.3.4"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Chatchawich Chaihong <6610130021@email.psu.ac.th>"]

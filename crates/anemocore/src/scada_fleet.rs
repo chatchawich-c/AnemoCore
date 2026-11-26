@@ -630,3 +630,79 @@ mod scada_extra_tests {
         assert!(lead.unwrap() > 0.0);
     }
 }
+
+pub fn build_sparse_knn_laplacian(coords: &[(f64, f64)], k: usize, sigma_dist: f64) -> Vec<Vec<(usize, f64)>> {
+    let n = coords.len();
+    if n == 0 { return Vec::new(); }
+    let k_eff = k.min(n.saturating_sub(1));
+    (0..n).map(|i| {
+        if k_eff == 0 { return vec![(i, 1.0)]; }
+        let mut dists: Vec<(usize, f64)> = (0..n).filter(|&j| j != i)
+            .map(|j| (j, (coords[i].0 - coords[j].0).hypot(coords[i].1 - coords[j].1))).collect();
+        dists.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(core::cmp::Ordering::Equal));
+        dists.truncate(k_eff);
+        let scale = if sigma_dist > 1e-12 { sigma_dist } else { (dists.iter().map(|x| x.1).sum::<f64>() / dists.len() as f64).max(1.0) };
+        let inv_2s2 = 1.0 / (2.0 * scale * scale);
+        let mut deg = 0.0;
+        let ws: Vec<(usize, f64)> = dists.into_iter().map(|(j, d)| { let w = (-d * d * inv_2s2).exp().max(1e-12); deg += w; (j, w) }).collect();
+        let mut row = Vec::with_capacity(k_eff + 1);
+        row.push((i, 1.0));
+        for (j, w) in ws { row.push((j, -w / deg)); }
+        row
+    }).collect()
+}
+
+pub fn causal_modwt_db4(series: &[f64], levels: usize) -> (Vec<Vec<f64>>, Vec<f64>) {
+    let n = series.len();
+    if n == 0 || levels == 0 { return (Vec::new(), series.to_vec()); }
+    const G: [f64; 8] = [-0.010597401784997278, 0.032883011666982945, 0.030841381835986965, -0.18703481171888114,
+                         -0.02798376941698385, 0.6308807679295904, 0.7148465705525415, 0.23037781330885523];
+    let s2 = core::f64::consts::FRAC_1_SQRT_2;
+    let mut gt = [0.0; 8]; let mut ht = [0.0; 8];
+    for l in 0..8 { gt[l] = G[l] * s2; ht[l] = (if l % 2 == 0 { 1.0 } else { -1.0 }) * gt[7 - l]; }
+    let mut vp = series.to_vec();
+    let mut details = Vec::with_capacity(levels);
+    for j in 0..levels {
+        let stride = 1usize << j;
+        let (mut wj, mut vj) = (vec![0.0; n], vec![0.0; n]);
+        for t in 0..n {
+            for l in 0..8 {
+                let v = vp[t.saturating_sub(l * stride)];
+                wj[t] += ht[l] * v; vj[t] += gt[l] * v;
+            }
+        }
+        details.push(wj); vp = vj;
+    }
+    (details, vp)
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct LaplaceSarimaxDualGuardOutput {
+    pub rectified_residuals: Vec<Vec<f64>>, pub fast_scores: Vec<f64>, pub slow_scores: Vec<f64>,
+    pub fast_alarms: Vec<bool>, pub slow_alarms: Vec<bool>, pub dual_guard_alarms: Vec<bool>,
+}
+
+pub fn laplace_sarimax_dual_guard(
+    residuals: &[Vec<f64>], coords: &[(f64, f64)], k: usize, sigma_dist: f64,
+    modwt_levels: usize, fast_threshold: f64, slow_threshold: f64,
+) -> LaplaceSarimaxDualGuardOutput {
+    let nt = residuals.len().min(coords.len());
+    let steps = residuals.iter().take(nt).map(|r| r.len()).min().unwrap_or(0);
+    let lap = build_sparse_knn_laplacian(&coords[..nt], k, sigma_dist);
+    let mut rect = vec![vec![0.0; steps]; nt];
+    for t in 0..steps {
+        for i in 0..nt {
+            rect[i][t] = lap[i].iter().map(|&(j, c)| c * residuals[j][t]).sum::<f64>().max(0.0);
+        }
+    }
+    let (mut fs, mut ss, mut fa, mut sa, mut da) = (vec![], vec![], vec![], vec![], vec![]);
+    for i in 0..nt {
+        let fsc = rect[i].iter().copied().fold(0.0_f64, f64::max);
+        let (det, sm) = causal_modwt_db4(&rect[i], modwt_levels.max(1));
+        let rms = det.last().map(|d| if d.is_empty() { 0.0 } else { (d.iter().map(|v| v * v).sum::<f64>() / d.len() as f64).sqrt() }).unwrap_or(0.0);
+        let ssc = sm.iter().copied().fold(0.0_f64, f64::max) + rms;
+        let (f_al, s_al) = (fsc > fast_threshold, ssc > slow_threshold);
+        fs.push(fsc); ss.push(ssc); fa.push(f_al); sa.push(s_al); da.push(f_al || s_al);
+    }
+    LaplaceSarimaxDualGuardOutput { rectified_residuals: rect, fast_scores: fs, slow_scores: ss, fast_alarms: fa, slow_alarms: sa, dual_guard_alarms: da }
+}

@@ -544,6 +544,14 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_heat_diffuse, m)?)?;
     m.add_function(wrap_pyfunction!(py_arrhenius_oil_life, m)?)?;
     m.add_function(wrap_pyfunction!(py_zddp_depletion, m)?)?;
+        m.add_function(wrap_pyfunction!(py_wake_analytic_gradients, m)?)?;
+    m.add_function(wrap_pyfunction!(py_estimate_bankable_aep_iec, m)?)?;
+    m.add_function(wrap_pyfunction!(py_bearing_fault_frequencies, m)?)?;
+    m.add_function(wrap_pyfunction!(py_build_sparse_knn_laplacian, m)?)?;
+    m.add_function(wrap_pyfunction!(py_causal_modwt_db4, m)?)?;
+    m.add_function(wrap_pyfunction!(py_laplace_sarimax_dual_guard, m)?)?;
+    m.add_function(wrap_pyfunction!(py_rl_derating_step, m)?)?;
+    m.add_function(wrap_pyfunction!(py_rl_derating_rollout, m)?)?;
     Ok(())
 }
 
@@ -1535,4 +1543,53 @@ fn py_zddp_depletion(
         k_ref,
         activation_energy_j_mol,
     )
+}
+
+#[pyfunction]
+fn py_wake_analytic_gradients(c_t: f64, k_w: f64, d: f64, x: f64, y: f64, z: f64, gamma: f64) -> (f64, f64, f64) {
+    anemocore_crate::wake::wake_analytic_gradients(c_t, k_w, d, x, y, z, gamma)
+}
+#[pyfunction]
+#[pyo3(signature = (aep_gross_mwh, loss_fractions, uncertainty_components_pct, aep_actual_mwh=None))]
+fn py_estimate_bankable_aep_iec(aep_gross_mwh: f64, loss_fractions: Vec<f64>, uncertainty_components_pct: Vec<f64>, aep_actual_mwh: Option<f64>) -> (f64, f64, f64, f64, f64, f64, f64) {
+    let r = anemocore_crate::oa::estimate_bankable_aep_iec61400_15(aep_gross_mwh, &loss_fractions, &uncertainty_components_pct, aep_actual_mwh);
+    (r.aep_net_mwh, r.p50_mwh, r.p75_mwh, r.p90_mwh, r.p99_mwh, r.sigma_tot_pct, r.eya_gap_pct)
+}
+#[pyfunction]
+fn py_bearing_fault_frequencies(nb: usize, db_mm: f64, dc_mm: f64, contact_angle_rad: f64, shaft_freq_hz: f64) -> PyResult<(f64, f64, f64, f64, f64)> {
+    anemocore_crate::tribology::bearing_fault_frequencies(nb, db_mm, dc_mm, contact_angle_rad, shaft_freq_hz)
+        .map(|f| (f.bpfo, f.bpfi, f.bsf, f.ftf, f.sanity_sum_error))
+        .map_err(pyo3::exceptions::PyValueError::new_err)
+}
+#[pyfunction]
+#[pyo3(signature = (coords, k=6, sigma_dist=0.0))]
+fn py_build_sparse_knn_laplacian(coords: Vec<(f64, f64)>, k: usize, sigma_dist: f64) -> Vec<Vec<(usize, f64)>> {
+    anemocore_crate::scada_fleet::build_sparse_knn_laplacian(&coords, k, sigma_dist)
+}
+#[pyfunction]
+#[pyo3(signature = (series, levels=3))]
+fn py_causal_modwt_db4(series: Vec<f64>, levels: usize) -> (Vec<Vec<f64>>, Vec<f64>) {
+    anemocore_crate::scada_fleet::causal_modwt_db4(&series, levels)
+}
+#[pyfunction]
+#[pyo3(signature = (residuals, coords, k=6, sigma_dist=0.0, modwt_levels=3, fast_threshold=3.5, slow_threshold=2.5))]
+fn py_laplace_sarimax_dual_guard(residuals: Vec<Vec<f64>>, coords: Vec<(f64, f64)>, k: usize, sigma_dist: f64, modwt_levels: usize, fast_threshold: f64, slow_threshold: f64) -> (Vec<Vec<f64>>, Vec<f64>, Vec<f64>, Vec<bool>, Vec<bool>, Vec<bool>) {
+    let o = anemocore_crate::scada_fleet::laplace_sarimax_dual_guard(&residuals, &coords, k, sigma_dist, modwt_levels, fast_threshold, slow_threshold);
+    (o.rectified_residuals, o.fast_scores, o.slow_scores, o.fast_alarms, o.slow_alarms, o.dual_guard_alarms)
+}
+#[pyfunction]
+#[pyo3(signature = (temp_fast_c, temp_slow_soak_c, ctd_accum, wind_speed_ms, ambient_temp_c, derating_action, dt_s=600.0, rated_power_mw=5.0, temp_crit_c=115.0))]
+fn py_rl_derating_step(temp_fast_c: f64, temp_slow_soak_c: f64, ctd_accum: f64, wind_speed_ms: f64, ambient_temp_c: f64, derating_action: f64, dt_s: f64, rated_power_mw: f64, temp_crit_c: f64) -> (f64, f64, f64, f64, f64, f64, f64, bool) {
+    let mut cfg = anemocore_crate::rl_derating::RlDeratingConfig::default();
+    cfg.rated_power_mw = rated_power_mw; cfg.temp_crit_c = temp_crit_c;
+    let mut st = anemocore_crate::rl_derating::RlDeratingState { temp_fast_c, temp_slow_soak_c, ctd_accum };
+    let o = anemocore_crate::rl_derating::step_rl_derating(&cfg, &mut st, wind_speed_ms, ambient_temp_c, derating_action, dt_s);
+    (o.power_mw, o.temp_fast_c, o.temp_slow_soak_c, o.p4_margin_c, o.ctd_increment, o.ctd_accum, o.reward, o.thermal_violation)
+}
+#[pyfunction]
+#[pyo3(signature = (wind_speeds_ms, ambient_temps_c, actions, dt_s=600.0, rated_power_mw=5.0, temp_crit_c=115.0))]
+fn py_rl_derating_rollout(wind_speeds_ms: Vec<f64>, ambient_temps_c: Vec<f64>, actions: Vec<f64>, dt_s: f64, rated_power_mw: f64, temp_crit_c: f64) -> (f64, f64, f64, usize) {
+    let mut cfg = anemocore_crate::rl_derating::RlDeratingConfig::default();
+    cfg.rated_power_mw = rated_power_mw; cfg.temp_crit_c = temp_crit_c;
+    anemocore_crate::rl_derating::evaluate_rl_derating_rollout(&cfg, &wind_speeds_ms, &ambient_temps_c, &actions, dt_s)
 }

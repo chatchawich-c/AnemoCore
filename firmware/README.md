@@ -7,9 +7,9 @@ This directory is reserved for the bare-metal `#![no_std]` firmware binary crate
 - `P44` (`quasicrystal_wpt`): Zero-FPU integer-only Shift-Add Fibonacci frame filter bank
 - `P46` (`fib_qmc`): Array-less rank-1 Fibonacci-Korobov QMC + Golden-Section stopping `S*`
 
-Verify `#![no_std]` ARM compilation of `ecowind-core` right now with:
+Verify `#![no_std]` ARM compilation of `anemocore` right now with:
 
 ```bash
 rustup target add thumbv7em-none-eabihf
-cargo check -p ecowind-core --no-default-features --target thumbv7em-none-eabihf
+cargo check -p anemocore --no-default-features --target thumbv7em-none-eabihf
 ```

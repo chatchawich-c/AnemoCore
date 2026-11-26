@@ -343,3 +343,13 @@ $$L(T) = L_0 \exp\!\left[ \frac{E_a}{R} \left( \frac{1}{T} - \frac{1}{T_0} \righ
 $$C(t) = C_0 \exp\!\big(-k(T)\,t\big), \qquad k(T) = k_{\text{ref}} \exp\!\left[ -\frac{E_a}{R} \left( \frac{1}{T} - \frac{1}{T_{\text{ref}}} \right) \right]$$
 
 with temperatures converted to Kelvin ($T_{\text{ref}} = 298.15\text{ K}$ for ZDDP) and universal gas constant $R = 8.31446261815324\text{ J}\cdot\text{mol}^{-1}\cdot\text{K}^{-1}$.
+
+
+---
+
+## P53 Laplace-SARIMAX & IEC 61400-15-1 (v0.3.4)
+
+- **Sparse $k$-NN Normalized Graph Laplacian & One-Sided Rectification:**
+  $$L_{\text{norm}} = I - D^{-1}W, \qquad r_i^+(t) = \max\!\big(0,\,(L_{\text{norm}} r(t))_i\big)$$
+- **IEC 61400-15-1 Exceedance Percentiles:**
+  $$P_q = \text{AEP}_{\text{net}}\left(1 - z_q \frac{\sigma_{\text{tot}}}{100}\right), \qquad P_{99} < P_{90} < P_{75} < P_{50}$$

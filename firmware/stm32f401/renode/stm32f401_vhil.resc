@@ -1,0 +1,4 @@
+using sysbus
+mach create "stm32f401re-anemocore"
+machine LoadPlatformDescription @platforms/cpus/stm32f4.repl
+showAnalyzer sysbus.usart2
