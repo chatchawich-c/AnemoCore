@@ -6,11 +6,52 @@ permissions:
 
 on:
   push:
-    tags: ["v*"]
+    branches: [ main ]
+    tags: [ "v*" ]
   workflow_dispatch:
 
 jobs:
+  check-release:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.ver.outputs.should_release }}
+      tag: ${{ steps.ver.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check Cargo.toml version & auto-tag
+        id: ver
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          VERSION=$(python3 -c '
+          import tomllib
+          d = tomllib.load(open("Cargo.toml", "rb"))
+          v = d.get("workspace", {}).get("package", {}).get("version") or d.get("package", {}).get("version")
+          assert v, "Version not found in Cargo.toml"
+          print(v)
+          ')
+          TAG="v${VERSION}"
+          if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q "${TAG}"; then
+            echo "Tag ${TAG} already exists; skipping release."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "${TAG}" -m "Release ${TAG}"
+            git push origin "${TAG}"
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          fi
+
   build-wheels:
+    needs: [check-release]
+    if: needs.check-release.outputs.should_release == 'true'
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental }}
     strategy:
@@ -27,6 +68,8 @@ jobs:
             experimental: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-release.outputs.tag }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -51,9 +94,13 @@ jobs:
           path: target/wheels/*.whl
 
   build-sdist:
+    needs: [check-release]
+    if: needs.check-release.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-release.outputs.tag }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -67,8 +114,8 @@ jobs:
           path: target/wheels/*.tar.gz
 
   publish:
-    needs: [build-wheels, build-sdist]
-    if: ${{ !cancelled() }}
+    needs: [check-release, build-wheels, build-sdist]
+    if: ${{ !cancelled() && needs.check-release.outputs.should_release == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -76,9 +123,10 @@ jobs:
           path: dist
           merge-multiple: true
       - name: Attach artifacts to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.check-release.outputs.tag }}
+          generate_release_notes: true
           files: dist/*
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
