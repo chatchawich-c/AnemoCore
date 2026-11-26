@@ -381,3 +381,25 @@ mod tests {
         assert!(report.aep_gross_mwh > 0.0);
     }
 }
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct BankableAepIecReport {
+    pub aep_net_mwh: f64, pub p50_mwh: f64, pub p75_mwh: f64, pub p90_mwh: f64, pub p99_mwh: f64,
+    pub sigma_tot_pct: f64, pub eya_gap_pct: f64,
+}
+pub fn estimate_bankable_aep_iec61400_15(
+    aep_gross_mwh: f64, loss_fractions: &[f64], uncertainty_components_pct: &[f64], aep_actual_mwh: Option<f64>,
+) -> BankableAepIecReport {
+    let surv = loss_fractions.iter().fold(1.0, |acc, &l| acc * (1.0 - l.clamp(0.0, 1.0)));
+    let net = aep_gross_mwh.max(0.0) * surv;
+    let sig_pct = uncertainty_components_pct.iter().map(|&s| s * s).sum::<f64>().sqrt();
+    let sig_mwh = net * (sig_pct / 100.0);
+    let eya = match aep_actual_mwh { Some(a) if net > 1e-12 => ((net - a) / net) * 100.0, _ => 0.0 };
+    BankableAepIecReport {
+        aep_net_mwh: net, p50_mwh: net,
+        p75_mwh: (net - 0.67448975 * sig_mwh).max(0.0),
+        p90_mwh: (net - 1.28155156 * sig_mwh).max(0.0),
+        p99_mwh: (net - 2.32634787 * sig_mwh).max(0.0),
+        sigma_tot_pct: sig_pct, eya_gap_pct: eya,
+    }
+}

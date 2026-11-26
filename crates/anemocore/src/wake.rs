@@ -119,17 +119,29 @@ pub fn superpose(deficits: &[f64], mode: Superposition, inflow_ratios: Option<&[
 /// Analytic gradients placeholder – returns zero gradients for now.
 /// In a full implementation these would be derived analytically.
 #[inline]
-pub fn wake_analytic_gradients(
-    _c_t: f64,
-    _k_w: f64,
-    _d: f64,
-    _x: f64,
-    _y: f64,
-    _z: f64,
-    _gamma: f64,
-) -> (f64, f64, f64) {
-    // (∂P/∂x, ∂P/∂y, ∂P/∂γ) – dummy zero values
-    (0.0, 0.0, 0.0)
+pub fn wake_analytic_gradients(c_t: f64, k_w: f64, d: f64, x: f64, y: f64, z: f64, gamma: f64) -> (f64, f64, f64) {
+    if x <= 0.0 || d <= 0.0 || c_t <= 0.0 || k_w < 0.0 { return (0.0, 0.0, 0.0); }
+    let ct = c_t.min(0.9999);
+    let sigma = k_w * x + 0.2 * d;
+    let denom = 8.0 * (sigma / d) * (sigma / d);
+    let (cos_g, sin_g) = (gamma.cos(), gamma.sin());
+    let u = (ct * cos_g) / denom;
+    let sqrt_r = (1.0 - u).max(1e-6).sqrt();
+    let amp = 1.0 - sqrt_r;
+    let da_dx = (-2.0 * u * (k_w / sigma)) / (2.0 * sqrt_r);
+    let da_dg = (-(ct * sin_g) / denom) / (2.0 * sqrt_r);
+    let g_gam = 0.5 * ct * cos_g * cos_g * sin_g;
+    let dg_dg = 0.5 * ct * (cos_g.powi(3) - 2.0 * sin_g * sin_g * cos_g);
+    let h_den = 1.0 + 2.0 * k_w * x / d;
+    let delta = g_gam * (x / h_den);
+    let ddelta_dx = g_gam / (h_den * h_den);
+    let ddelta_dg = dg_dg * (x / h_den);
+    let dy_eff = y - delta;
+    let r2 = dy_eff * dy_eff + z * z;
+    let inv_s2 = 1.0 / (sigma * sigma);
+    let env = (-0.5 * r2 * inv_s2).exp();
+    let dq_dx = (dy_eff * inv_s2) * ddelta_dx + (r2 / sigma.powi(3)) * k_w;
+    (da_dx * env + amp * env * dq_dx, amp * env * (-dy_eff * inv_s2), da_dg * env + amp * env * (dy_eff * inv_s2) * ddelta_dg)
 }
 
 #[cfg(test)]
@@ -171,7 +183,19 @@ mod tests {
 
     #[test]
     fn test_analytic_gradients_zero() {
-        let grads = wake_analytic_gradients(0.8, 0.05, 100.0, 200.0, 0.0, 0.0, 0.0);
-        assert!(grads.0.abs() < 1e-12 && grads.1.abs() < 1e-12 && grads.2.abs() < 1e-12);
+        assert_eq!(wake_analytic_gradients(0.0, 0.04, 100.0, 500.0, 10.0, 0.0, 0.1), (0.0, 0.0, 0.0));
+        let (ct, kw, d, x, y, z, g) = (0.75, 0.04, 100.0, 500.0, 15.0, 5.0, 0.15);
+        let (gx, gy, gg) = wake_analytic_gradients(ct, kw, d, x, y, z, g);
+        let eval = |xx: f64, yy: f64, gg_: f64| -> f64 {
+            let sig = kw * xx + 0.2 * d;
+            let u = (ct * gg_.cos()) / (8.0 * (sig / d).powi(2));
+            let amp = 1.0 - (1.0 - u).max(1e-6).sqrt();
+            let del = 0.5 * ct * gg_.cos().powi(2) * gg_.sin() * (xx / (1.0 + 2.0 * kw * xx / d));
+            amp * (-0.5 * ((yy - del).powi(2) + z * z) / (sig * sig)).exp()
+        };
+        let eps = 1e-6;
+        assert!((gx - (eval(x + eps, y, g) - eval(x - eps, y, g)) / (2.0 * eps)).abs() < 1e-6);
+        assert!((gy - (eval(x, y + eps, g) - eval(x, y - eps, g)) / (2.0 * eps)).abs() < 1e-6);
+        assert!((gg - (eval(x, y, g + eps) - eval(x, y, g - eps)) / (2.0 * eps)).abs() < 1e-6);
     }
 }

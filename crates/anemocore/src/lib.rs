@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-//! # ecowind-core
+//! # anemocore
 //!
 //! Pure-Rust, `#![no_std]`-compatible computational kernels for the **ECO-WIND**
 //! multi-scale wind turbine prognostics, grid-forming control, quasicrystal signal
@@ -63,5 +63,13 @@ pub mod tribology;
 pub mod wake;
 #[cfg(feature = "std")]
 pub mod wra;
+#[cfg(feature = "std")]
 pub mod heat_diffusion;
+#[cfg(feature = "std")]
 pub mod lubricant;
+
+#[cfg(feature = "std")]
+pub mod rl_derating;
+
+#[cfg(feature = "std")]
+pub mod plugin;

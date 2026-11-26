@@ -218,3 +218,14 @@ for _ in 0..1000 {
 - **Graph Laplacian heat diffusion:** `py_heat_diffuse(values, adjacency, dt, steps)` in Python and `r_heat_diffuse(values, adjacency, dt, steps)` in R wrap `anemocore::heat_diffusion::heat_diffuse`.
 - **Arrhenius lubricant life:** `py_arrhenius_oil_life(temp_c, ref_temp_c, ref_life_h, activation_energy_j_mol)` in Python and `r_arrhenius_oil_life(...)` in R wrap `LubricantModel::arrhenius_oil_life` (`anemocore::lubricant::lubricant::arrhenius_oil_life`).
 - **ZDDP additive depletion:** `py_zddp_depletion(initial_ppm, temp_c, time_h, k_ref, activation_energy_j_mol)` in Python and `r_zddp_depletion(...)` in R wrap `LubricantModel::zddp_depletion` (`anemocore::lubricant::lubricant::zddp_depletion`).
+
+
+---
+
+## v0.3.4 Feature-Complete Additions
+
+- **P53 Laplace-SARIMAX:** `py_build_sparse_knn_laplacian`, `py_causal_modwt_db4`, `py_laplace_sarimax_dual_guard`
+- **Analytic Wake Gradients & IEC 61400-15-1 Bankable AEP:** `py_wake_analytic_gradients`, `py_estimate_bankable_aep_iec`
+- **Bearing Fault Kinematics:** `py_bearing_fault_frequencies` (BPFO, BPFI, BSF, FTF)
+- **Dual-Horizon RL Derating (PPO/SAC):** `ThermalDeratingEnv`, `py_rl_derating_step`, `py_rl_derating_rollout`
+- **Modular Plug-in Registry:** `PluginRegistry`, `register_plugin`, `get_plugin`, `list_plugins`, `clear_plugins`
