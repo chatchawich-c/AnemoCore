@@ -1,40 +1,25 @@
-# AnemoCore Documentation
+# AnemoCore `v0.3.5`
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24495520.svg)](https://doi.org/10.5281/zenodo.24495520)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://chatchawich-c.github.io/AnemoCore/)
+[![PyPI version](https://img.shields.io/pypi/v/anemocore.svg)](https://pypi.org/project/anemocore/)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-green.svg)](https://github.com/chatchawich-c/AnemoCore)
 
 ## Overview
 
-**AnemoCore v0.3.5** – a high-performance, zero-duplication wind energy resource assessment (WRA), wake modeling, operational assessment (OA), drivetrain reliability, and grid‑stability engine written in pure Rust with native Python (`PyO3` / `cp39-abi3`) and R (`extendr`) bindings.
-
-* **Wheel size:** `4.87 MiB` stripped universal `cp39-abi3` wheel (≤ 5 MiB budget)
-* **Peak RSS budget:** `71 MiB` base import (≤ 150 MiB on an 8 GiB system, with lazy `anemocore.viz`)
-* **Zero‑duplication data policy:** Benchmark datasets are external and never duplicated in the repository.
-* **Funding attribution:** Supported by the **European Union Erasmus+ Capacity Building in Higher Education (CBHE)** project **ECO‑WIND** (*Enhancing Capacity in Condition-based Maintenance of Wind Energy*, **Grant No. `ERASMUS‑EDU‑2025‑CBHE‑101177220`**).
-
----
+High-performance Pure-Rust core library with native Python (PyO3) and R bindings for wind-energy physics, Weibull MLE, and SCADA power curve modeling.
 
 ## Installation
 
-### Python (Pre-built Wheel — Recommended)
-Download `anemocore-0.3.5-cp39-abi3-macosx_10_12_x86_64.whl` from [GitHub Releases](https://github.com/chatchawich-c/AnemoCore/releases/tag/v0.3.5) and install via `pip`:
-
 ```bash
-pip install anemocore-0.3.5-cp39-abi3-macosx_10_12_x86_64.whl
+pip install anemocore
 ```
 
-### Build from Source (Python & R)
+## Documentation & Benchmarks
 
-```bash
-# Python installation via GitHub repository
-python3 -m pip install "git+https://github.com/chatchawich-c/AnemoCore.git#subdirectory=bindings/python"
+- **Central Benchmark Portal:** [https://chatchawich-c.github.io/CoreHub/benchmarks/](https://chatchawich-c.github.io/CoreHub/benchmarks/)
+- **Dataset Catalog (with DOIs):** [https://chatchawich-c.github.io/CoreHub/datasets/](https://chatchawich-c.github.io/CoreHub/datasets/)
 
-# R installation via remotes
-R -q -e 'remotes::install_github("chatchawich-c/AnemoCore", subdir = "bindings/r")'
-```
+## Funding Attribution
 
----
-
-## Getting Started
-
-*See the **[Usage](usage.md)** page for quick‑start examples using `WindClimate`, `WindFarm`, and `Drivetrain`, or browse the **[API Manual](API_USAGE_MANUAL.md)** for full Rust, Python, and R function references.*
-
----
-**Funding Attribution:** EU Erasmus+ CBHE ECO-WIND (Grant No. `ERASMUS-EDU-2025-CBHE-101177220`).
+EU Erasmus+ CBHE **ECO-WIND** (Grant No. `ERASMUS-EDU-2025-CBHE-101177220`).

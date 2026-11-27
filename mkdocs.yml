@@ -10,9 +10,6 @@ nav:
 - Python API: api/python.md
 - API Manual: API_USAGE_MANUAL.md
 - Roadmap: ROADMAP.md
-- ECO-WIND Benchmarks:
-  - Overview: benchmarks/index.md
-  - Results: benchmarks/results.md
 - Benchmarks: benchmarks.md
 theme:
   name: material
@@ -44,23 +41,13 @@ plugins:
         options:
           docstring_style: google
 markdown_extensions:
+- admonition
+- tables
 - pymdownx.arithmatex:
     generic: true
-- admonition
-- codehilite
-- footnotes
-- toc:
-    permalink: true
-- pymdownx.superfences
+- pymdownx.highlight
 - pymdownx.inlinehilite
-- pymdownx.snippets
-- pymdownx.betterem:
-    smart_enable: all
-- pymdownx.caret
-- pymdownx.mark
-- pymdownx.tilde
-- pymdownx.tasklist:
-    custom_checkbox: true
+- pymdownx.superfences
 extra_javascript:
 - javascripts/mathjax.js
 - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js

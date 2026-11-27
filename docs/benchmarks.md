@@ -2,7 +2,8 @@
 
 All benchmarks follow the **CoreHub Two-Tier Evaluation Protocol** (Tier I: Controlled Synthetic `SEED=42` + Tier II: Real-World Multi-Domain Datasets).
 
-- Full Dataset Catalog & DOIs: [CoreHub Datasets](https://chatchawich-c.github.io/CoreHub/datasets/)
+- **Central Benchmark Portal:** [https://chatchawich-c.github.io/CoreHub/benchmarks/](https://chatchawich-c.github.io/CoreHub/benchmarks/)
+- **Full Dataset Catalog & DOIs:** [https://chatchawich-c.github.io/CoreHub/datasets/](https://chatchawich-c.github.io/CoreHub/datasets/)
 
 --8<-- "docs/benchmarks/synced/summary_table.md"
 
