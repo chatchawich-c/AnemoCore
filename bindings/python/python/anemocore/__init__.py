@@ -3,6 +3,12 @@
 from __future__ import annotations
 
 import math
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
+
+try:
+    __version__: str = _pkg_version("anemocore")
+except PackageNotFoundError:
+    __version__ = "0.3.5"
 
 PHI: float = (1.0 + math.sqrt(5.0)) / 2.0
 PHI_INV: float = (math.sqrt(5.0) - 1.0) / 2.0
@@ -10,6 +16,8 @@ FRAME_BOUND_A: float = 2.482
 FRAME_BOUND_B: float = 2.492
 
 from ._core import (
+    emit_lean4,
+    emit_smt2,
     py_kam_vsg_step,
     fit_weibull,
     py_aero_torque_thrust_curve,
@@ -234,4 +242,7 @@ __all__ = [
     "get_plugin",
     "list_plugins",
     "clear_plugins",
+    "__version__",
+    "emit_smt2",
+    "emit_lean4",
 ]

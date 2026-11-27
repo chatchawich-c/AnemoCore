@@ -73,3 +73,6 @@ pub mod rl_derating;
 
 #[cfg(feature = "std")]
 pub mod plugin;
+
+#[cfg(feature = "std")]
+pub mod cert;

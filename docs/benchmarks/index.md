@@ -35,7 +35,7 @@ python3 scripts/run_all_benchmarks.py \
   --out results/bench_release_check.json
 ```
 
-The runner invokes the native `anemocore._core` Rust backend for each selected paper and exports execution latency and peak RSS memory statistics to JSON. See [Results](results/) for detailed per-paper parity and runtime tables.
+The runner invokes the native `anemocore._core` Rust backend for each selected paper and exports execution latency and peak RSS memory statistics to JSON. See [Results](results.md) for detailed per-paper parity and runtime tables.
 
 ---
 

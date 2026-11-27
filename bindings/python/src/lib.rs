@@ -552,6 +552,8 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_laplace_sarimax_dual_guard, m)?)?;
     m.add_function(wrap_pyfunction!(py_rl_derating_step, m)?)?;
     m.add_function(wrap_pyfunction!(py_rl_derating_rollout, m)?)?;
+    m.add_function(wrap_pyfunction!(emit_smt2, m)?)?;
+    m.add_function(wrap_pyfunction!(emit_lean4, m)?)?;
     Ok(())
 }
 
@@ -1592,4 +1594,18 @@ fn py_rl_derating_rollout(wind_speeds_ms: Vec<f64>, ambient_temps_c: Vec<f64>, a
     let mut cfg = anemocore_crate::rl_derating::RlDeratingConfig::default();
     cfg.rated_power_mw = rated_power_mw; cfg.temp_crit_c = temp_crit_c;
     anemocore_crate::rl_derating::evaluate_rl_derating_rollout(&cfg, &wind_speeds_ms, &ambient_temps_c, &actions, dt_s)
+}
+
+#[pyfunction]
+#[pyo3(signature = (cp=0.48, omega_ctrl=7.725424859373685, omega_n=12.5, gamma_margin=0.15))]
+fn emit_smt2(cp: f64, omega_ctrl: f64, omega_n: f64, gamma_margin: f64) -> String {
+    use anemocore_crate::cert::{AnemoCertificate, CertificateEmitter};
+    AnemoCertificate { cp, omega_ctrl, omega_n, gamma_margin }.emit_smt2()
+}
+
+#[pyfunction]
+#[pyo3(signature = (cp=0.48, omega_ctrl=7.725424859373685, omega_n=12.5, gamma_margin=0.15))]
+fn emit_lean4(cp: f64, omega_ctrl: f64, omega_n: f64, gamma_margin: f64) -> String {
+    use anemocore_crate::cert::{AnemoCertificate, CertificateEmitter};
+    AnemoCertificate { cp, omega_ctrl, omega_n, gamma_margin }.emit_lean4()
 }

@@ -1,0 +1,24 @@
+{
+  "title": "AnemoCore",
+  "upload_type": "software",
+  "version": "0.3.5",
+  "description": "Pure-Rust (#![no_std] compatible) wind energy resource assessment, wake modeling, drivetrain prognostics, and KAM-VSG grid-forming control engine with PyO3 Python and R bindings, funded by the European Union Erasmus+ CBHE project ECO-WIND (Grant No. ERASMUS-EDU-2025-CBHE-101177220).",
+  "creators": [
+    {
+      "name": "Chaihong, Chatchawich",
+      "affiliation": "Prince of Songkla University",
+      "orcid": "0009-0000-7379-5738"
+    }
+  ],
+  "license": "Apache-2.0",
+  "keywords": [
+    "wind-energy",
+    "condition-based-maintenance",
+    "grid-stability",
+    "virtual-synchronous-generator",
+    "weibull-distribution",
+    "rust",
+    "pyo3",
+    "eco-wind"
+  ]
+}

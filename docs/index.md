@@ -34,4 +34,4 @@ R -q -e 'remotes::install_github("chatchawich-c/AnemoCore", subdir = "bindings/r
 
 ## Getting Started
 
-*See the **[Usage](usage/)** page for quick‑start examples using `WindClimate`, `WindFarm`, and `Drivetrain`, or browse the **[API Manual](API_USAGE_MANUAL/)** for full Rust, Python, and R function references.*
+*See the **[Usage](usage.md)** page for quick‑start examples using `WindClimate`, `WindFarm`, and `Drivetrain`, or browse the **[API Manual](API_USAGE_MANUAL.md)** for full Rust, Python, and R function references.*
