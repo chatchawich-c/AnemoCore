@@ -29,7 +29,8 @@ jobs:
       - run: |
           pip install --upgrade pip
           pip install maturin mkdocs-material pymdown-extensions "mkdocstrings[python]"
-          maturin develop --release --manifest-path bindings/python/Cargo.toml
+          maturin build --release --manifest-path bindings/python/Cargo.toml --out /tmp/wheels
+          pip install /tmp/wheels/*.whl
       - uses: actions/configure-pages@v5
       - run: python -m mkdocs build --strict
       - uses: actions/upload-pages-artifact@v3
