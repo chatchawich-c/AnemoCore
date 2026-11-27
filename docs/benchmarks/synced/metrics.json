@@ -1,0 +1,49 @@
+{
+  "library": "AnemoCore",
+  "version": "0.3.5",
+  "peak_rss_mib": 28.96,
+  "results": [
+    {
+      "suite": "Weibull-MLE (n=2000)",
+      "engine": "AnemoCore",
+      "p50_ms": 1.0220880067208782,
+      "p99_ms": 13.267437997856177,
+      "metric": "k=2.23, c=8.56"
+    },
+    {
+      "suite": "Wake Analytic Gradients",
+      "engine": "AnemoCore",
+      "p50_ms": 0.0006589980330318213,
+      "p99_ms": 0.37957536231260747,
+      "metric": "grad0=-7.9453e-04"
+    },
+    {
+      "suite": "IEC 61400-15-1 Bankable AEP",
+      "engine": "AnemoCore",
+      "p50_ms": 0.0009710056474432349,
+      "p99_ms": 0.007012642454355955,
+      "metric": "P50=23280.0 MWh"
+    },
+    {
+      "suite": "P53 Laplace-SARIMAX Dual-Guard",
+      "engine": "AnemoCore",
+      "p50_ms": 0.037609002902172506,
+      "p99_ms": 0.060266004875302315,
+      "metric": "alarms=0"
+    },
+    {
+      "suite": "Power Proxy Regression",
+      "engine": "LightGBM",
+      "p50_ms": 67.88312699791277,
+      "p99_ms": 125.90739623483387,
+      "metric": "baseline"
+    },
+    {
+      "suite": "Power Proxy Regression",
+      "engine": "NGBoost",
+      "p50_ms": 494.100725503813,
+      "p99_ms": 559.6583845907298,
+      "metric": "baseline"
+    }
+  ]
+}
