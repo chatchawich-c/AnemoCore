@@ -3,50 +3,66 @@ site_url: https://chatchawich-c.github.io/AnemoCore
 repo_url: https://github.com/chatchawich-c/AnemoCore
 repo_name: AnemoCore
 nav:
-  - Home: index.md
-  - Usage: usage.md
-  - Mathematical Formulations: MATHEMATICAL_FORMULATIONS.md
-  - Equations: equations.md
-  - Python API: api/python.md
-  - API Manual: API_USAGE_MANUAL.md
-  - Roadmap: ROADMAP.md
-  - ECO-WIND Benchmarks:
-      - Overview: benchmarks/index.md
-      - Results: benchmarks/results.md
+- Home: index.md
+- Usage: usage.md
+- Mathematical Formulations: MATHEMATICAL_FORMULATIONS.md
+- Equations: equations.md
+- Python API: api/python.md
+- API Manual: API_USAGE_MANUAL.md
+- Roadmap: ROADMAP.md
+- ECO-WIND Benchmarks:
+  - Overview: benchmarks/index.md
+  - Results: benchmarks/results.md
+- Benchmarks: benchmarks.md
 theme:
   name: material
   palette:
-    - scheme: default
-      primary: indigo
-      accent: indigo
+  - scheme: default
+    primary: indigo
+    accent: deep purple
+    toggle:
+      icon: material/brightness-7
+      name: Switch to dark mode
+  - scheme: slate
+    primary: indigo
+    accent: deep purple
+    toggle:
+      icon: material/brightness-4
+      name: Switch to light mode
   features:
-    - navigation.tabs
-    - navigation.top
+  - navigation.tabs
+  - navigation.sections
+  - navigation.top
+  - search.suggest
+  - search.highlight
+  - content.code.copy
 plugins:
-  - search
-  - mkdocstrings:
-      handlers:
-        python:
-          options:
-            docstring_style: google
+- search
+- mkdocstrings:
+    handlers:
+      python:
+        options:
+          docstring_style: google
 markdown_extensions:
-  - pymdownx.arithmatex:
-      generic: true
-  - admonition
-  - codehilite
-  - footnotes
-  - toc:
-      permalink: true
-  - pymdownx.superfences
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.betterem:
-      smart_enable: all
-  - pymdownx.caret
-  - pymdownx.mark
-  - pymdownx.tilde
-  - pymdownx.tasklist:
-      custom_checkbox: true
+- pymdownx.arithmatex:
+    generic: true
+- admonition
+- codehilite
+- footnotes
+- toc:
+    permalink: true
+- pymdownx.superfences
+- pymdownx.inlinehilite
+- pymdownx.snippets
+- pymdownx.betterem:
+    smart_enable: all
+- pymdownx.caret
+- pymdownx.mark
+- pymdownx.tilde
+- pymdownx.tasklist:
+    custom_checkbox: true
 extra_javascript:
-  - javascripts/mathjax.js
-  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+- javascripts/mathjax.js
+- https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+copyright: 'Copyright &copy; 2026 Chatchawich Chaihong (ORCID: 0009-0000-7379-5738)
+  &mdash; EU Erasmus+ CBHE ECO-WIND (Grant No. ERASMUS-EDU-2025-CBHE-101177220)'
