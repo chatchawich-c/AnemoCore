@@ -2,7 +2,7 @@ name: Docs
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -15,40 +15,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-      - name: Install dependencies and build AnemoCore bindings
-        run: |
-          python -m venv .venv
-          .venv/bin/pip install --upgrade pip
-          .venv/bin/pip install maturin mkdocs mkdocs-material pymdown-extensions "mkdocstrings[python]"
-          .venv/bin/maturin develop --release -m bindings/python/Cargo.toml
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-      - name: Build site
-        env:
-          NO_MKDOCS_2_WARNING: "1"
-        run: .venv/bin/mkdocs build --strict
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./site
-
   deploy:
-    needs: build
-    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install --upgrade pip && pip install mkdocs-material pymdown-extensions "mkdocstrings[python]"
+      - uses: actions/configure-pages@v5
+      - run: python -m mkdocs build --strict
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
         uses: actions/deploy-pages@v4
