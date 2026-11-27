@@ -1,1 +1,31 @@
-[]
+{
+  "library": "AnemoCore",
+  "version": "0.3.5",
+  "peak_rss_mib": 152.08,
+  "results": [
+    {
+      "suite": "Weibull-MLE",
+      "engine": "AnemoCore",
+      "fit_ms": 0.0,
+      "infer_p50_ms": 0.724,
+      "infer_p99_ms": 1.038,
+      "metric": "k~2.10, Warmup=3 (stable p99)"
+    },
+    {
+      "suite": "PowerCurve-Proxy",
+      "engine": "AnemoCore (HGB-Proxy)",
+      "fit_ms": 448.703,
+      "infer_p50_ms": 1.422,
+      "infer_p99_ms": 2.688,
+      "metric": "RMSE=1.699, MAE=1.356, R2=0.9985"
+    },
+    {
+      "suite": "PowerCurve-Proxy",
+      "engine": "LightGBM",
+      "fit_ms": 168.278,
+      "infer_p50_ms": 1.778,
+      "infer_p99_ms": 4.248,
+      "metric": "RMSE=1.664, MAE=1.334, R2=0.9985"
+    }
+  ]
+}
